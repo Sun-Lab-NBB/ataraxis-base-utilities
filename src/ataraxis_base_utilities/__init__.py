@@ -7,6 +7,6 @@ require additional configurations, as most modules from this library come with d
 many places.
 """
 
-from .utilities import Console, LogLevel, LogBackends
+from .utilities import Console, LogBackends, LogLevel
 
-__all__ = ['Console', 'LogLevel', 'LogBackends']
+__all__ = ["Console", "LogLevel", "LogBackends"]

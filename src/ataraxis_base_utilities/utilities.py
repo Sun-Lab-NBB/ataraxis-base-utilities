@@ -13,6 +13,7 @@ import traceback
 from collections.abc import Callable
 from enum import Enum
 from functools import wraps
+from os import PathLike
 from pathlib import Path
 from types import NoneType
 from typing import Any, Literal, Optional
@@ -128,9 +129,9 @@ class Console:
     def __init__(
         self,
         logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = LogBackends.LOGURU,
-        message_log_path: Optional[Path] = None,
-        error_log_path: Optional[Path] = None,
-        debug_log_path: Optional[Path] = None,
+        message_log_path: Optional[Path | str] = None,
+        error_log_path: Optional[Path | str] = None,
+        debug_log_path: Optional[Path | str] = None,
         line_width: int = 120,
         break_long_words: bool = False,
         break_on_hyphens: bool = False,
@@ -151,6 +152,7 @@ class Console:
         # Verifies that the input paths to log files, if any, use valid file extensions and are otherwise well-formed.
         valid_extensions: set[str] = {".txt", ".log", ".json"}  # Stores currently supported log file extensions
         if not isinstance(debug_log_path, NoneType):
+            debug_log_path = Path(debug_log_path)
             if debug_log_path.suffix not in valid_extensions:
                 message = (
                     f"Invalid 'debug_log_path' argument encountered when instantiating Console class instance. "
@@ -162,6 +164,7 @@ class Console:
                 # If the path is valid, verifies the directory portion of the path exists and, if not, creates it.
                 self._ensure_directory_exists(debug_log_path)
         if not isinstance(message_log_path, NoneType):
+            message_log_path = Path(message_log_path)
             if message_log_path.suffix not in valid_extensions:
                 message = (
                     f"Invalid 'message_log_path' argument encountered when instantiating Console class instance. "
@@ -172,6 +175,7 @@ class Console:
             else:
                 self._ensure_directory_exists(message_log_path)
         if not isinstance(error_log_path, NoneType):
+            error_log_path = Path(error_log_path)
             if error_log_path.suffix not in valid_extensions:
                 message = (
                     f"Invalid 'error_log_path' argument encountered when instantiating Console class instance. "
@@ -402,13 +406,13 @@ class Console:
             os.makedirs(directory)
 
     @validate_call()
-    def format_message(self, message: str, *, loguru: bool = True) -> str:
+    def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the standards used across Ataraxis and related projects.
 
         Args:
             message: The text string to format to display according to Ataraxis standards.
             loguru: A flag that determines if the message is intended to be processed via loguru backend or
-                another method or backend (e.g.: Exception class or click backend). Defaults to True.
+                another method or backend (e.g.: Exception class or click backend). Defaults to False.
 
         Returns:
             Formatted text message (augmented with newline and other service characters as necessary).
@@ -462,7 +466,7 @@ class Console:
             )
 
     @validate_call()
-    def echo(self, message: str, level: LogLevel, *, terminal: bool = True, log: bool = False) -> bool:
+    def echo(self, message: str, level: LogLevel = LogLevel.INFO, *, terminal: bool = True, log: bool = False) -> bool:
         """Formats the input message according to the class configuration and outputs it to the terminal, file or both.
 
         In a way, this can be seen as a better 'print'. It does a lot more than just print though, especially when the
@@ -518,8 +522,9 @@ class Console:
                     textwrap.fill(text=message, max_lines=120, break_on_hyphens=False, break_long_words=False)
                 )
 
+            # For loguru, the message just needs to be logged. Loguru will use available handles to determine where to
+            # route the message.
             if level == LogLevel.DEBUG:
-                print("Sure!")
                 self._logger.debug(formatted_message)
             elif level == LogLevel.INFO:
                 self._logger.info(formatted_message)
@@ -536,31 +541,28 @@ class Console:
             # Formats the message using non-loguru parameters
             formatted_message = self.format_message(message=message, loguru=False)
 
-            # Debug messages
-            if level == LogLevel.DEBUG:
-                # If the message needs to be written to a file, ensures the file path was provided and then writes it
-                # to the file in append mode.
-                if log and self._debug_log_path:
-                    with open(file=self._debug_log_path, mode="at") as file:
-                        click.echo(file=file, message=formatted_message, color=False)
-                # Also, if requested, writes the message to terminal.
-                if terminal:
+            # For terminal, the only difference between error + and other messages is that errors go to stderr and
+            # everything else goes to stdout.
+            if terminal:
+                if level != LogLevel.ERROR and level != LogLevel.CRITICAL:
                     click.echo(message=formatted_message, err=False, color=self._use_color)
-            # Info through Warning levels
-            elif level == LogLevel.INFO or level == LogLevel.SUCCESS or level == LogLevel.WARNING:
-                if log and self._message_log_path:
-                    with open(file=self._message_log_path, mode="at") as file:
-                        click.echo(file=file, message=formatted_message, color=False)
-                if terminal:
-                    click.echo(message=formatted_message, err=False, color=self._use_color)
-            # Error and Critical levels
-            elif level == LogLevel.ERROR or level == LogLevel.CRITICAL:
-                if log and self._error_log_path:
-                    with open(file=self._error_log_path, mode="at") as file:
-                        click.echo(file=file, message=formatted_message, color=False)
-                if terminal:
+                else:
                     click.echo(message=formatted_message, err=True, color=self._use_color)
 
+            # For files, it is a bit more nuanced, as click respects differnt log file paths.
+            if log:
+                if level == LogLevel.DEBUG and self._debug_log_path:
+                    with open(file=str(self._debug_log_path), mode="a") as file:
+                        click.echo(file=file, message=formatted_message, color=False)
+
+                elif level == LogLevel.ERROR or level == LogLevel.CRITICAL and self._error_log_path:
+                    with open(file=str(self._error_log_path), mode="a") as file:
+                        click.echo(file=file, message=formatted_message, color=False)
+                elif self._message_log_path:
+                    with open(file=str(self._message_log_path), mode="a") as file:
+                        click.echo(file=file, message=formatted_message, color=False)
+
+        # Returns true to indicate that the message was processed.
         return True
 
     @validate_call()
@@ -638,7 +640,7 @@ class Console:
         # optionally raises the error if re-raising is requested.
         elif self._backend == LogBackends.CLICK:
             if log:
-                with open(file=str(self._error_log_path), mode="at") as file:
+                with open(file=str(self._error_log_path), mode="a") as file:
                     click.echo(file=file, message=formatted_message, color=False)
             if terminal:
                 click.echo(message=formatted_message, err=True, color=self._use_color)

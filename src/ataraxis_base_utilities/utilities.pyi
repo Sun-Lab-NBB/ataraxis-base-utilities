@@ -3,6 +3,7 @@ from collections.abc import Callable as Callable
 from enum import Enum
 from functools import wraps as wraps
 from loguru._logger import Logger as Logger
+from os import PathLike as PathLike
 from pathlib import Path
 from typing import Any, Literal
 
@@ -83,7 +84,7 @@ class Console:
     _backend: Incomplete
     _logger: Incomplete
     _is_enabled: bool
-    def __init__(self, logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = ..., message_log_path: Path | None = None, error_log_path: Path | None = None, debug_log_path: Path | None = None, line_width: int = 120, break_long_words: bool = False, break_on_hyphens: bool = False, use_color: bool = True) -> None: ...
+    def __init__(self, logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = ..., message_log_path: Path | str | None = None, error_log_path: Path | str | None = None, debug_log_path: Path | str | None = None, line_width: int = 120, break_long_words: bool = False, break_on_hyphens: bool = False, use_color: bool = True) -> None: ...
     def add_handles(self, *, remove_existing_handles: bool = True, debug_terminal: bool = False, debug_file: bool = False, message_terminal: bool = True, message_file: bool = False, error_terminal: bool = True, error_file: bool = False, enqueue: bool = False) -> None:
         """Reconfigures the local loguru Logger class instance to use default project Ataraxis handles.
 
@@ -141,13 +142,13 @@ class Console:
             path: The string-path to be processed. Should use os-defined delimiters, as os.path.splitext() is used to
                 decompose the path into nodes.
         """
-    def format_message(self, message: str, *, loguru: bool = True) -> str:
+    def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the standards used across Ataraxis and related projects.
 
         Args:
             message: The text string to format to display according to Ataraxis standards.
             loguru: A flag that determines if the message is intended to be processed via loguru backend or
-                another method or backend (e.g.: Exception class or click backend). Defaults to True.
+                another method or backend (e.g.: Exception class or click backend). Defaults to False.
 
         Returns:
             Formatted text message (augmented with newline and other service characters as necessary).
@@ -155,7 +156,7 @@ class Console:
         Raises:
             ValidationError: If the 'message' argument is not a string.
         """
-    def echo(self, message: str, level: LogLevel, *, terminal: bool = True, log: bool = False) -> bool:
+    def echo(self, message: str, level: LogLevel = ..., *, terminal: bool = True, log: bool = False) -> bool:
         """Formats the input message according to the class configuration and outputs it to the terminal, file or both.
 
         In a way, this can be seen as a better 'print'. It does a lot more than just print though, especially when the

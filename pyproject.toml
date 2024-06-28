@@ -99,8 +99,9 @@ conda = [
 # Dependencies known to not be installable with conda for at least one supported development platform
 # (OSX ARM64, WIN AMD64, LIN AMD64).
 noconda =[
-    # Tox
-    "tox-uv>=1"
+    # Tox and Automation
+    "tox-uv>=1",
+    "ataraxis-automation>=1",
 ]
 
 # A shorhand specification that installs tox and all packages required for development tasks. This specification can

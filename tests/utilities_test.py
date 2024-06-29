@@ -1,4 +1,4 @@
-"""Tests all classes and functions available from the utilities.py module."""
+"""This module stores the tests for all classes and functions available from the utilities.py module."""
 
 import os
 import re

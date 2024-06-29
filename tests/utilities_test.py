@@ -28,7 +28,7 @@ def error_format(message: str) -> str:
 
     This method is used to setup pytest 'match' clauses to verify raised exceptions.
     """
-    return re.escape(textwrap.fill(message, max_lines=120, break_long_words=False, break_on_hyphens=False))
+    return re.escape(textwrap.fill(message, width=120, break_long_words=False, break_on_hyphens=False))
 
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])

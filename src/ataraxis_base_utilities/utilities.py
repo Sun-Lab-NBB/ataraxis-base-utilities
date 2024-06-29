@@ -578,15 +578,18 @@ class Console:
     ) -> None:
         """Raises and immediately logs the requested error.
 
-        This method allows to flexibly raise errors, while customizing (to a degree) the way errors are logged. Note,
-        if the parent class instance is disabled, the method will return without processing the error.
+        This method allows to flexibly raise errors, while customizing (to a degree) the way errors are logged.
+
+        Notes:
+            If Console is disabled, the method will format the message and raise the input exception using standard
+            python functionality without any logging or additional features.
 
         Args:
             message: The error-message to pass to the error callable.
             error: The callable Exception class to be raised by the method. Defaults to RuntimeError.
             callback: Optional, only for loguru logging backends. The function to call after catching the exception.
                 This can be used to terminate or otherwise alter the runtime without relying on the standard python
-                mechanism of retracing the call stack. For example, sys.exit(1) can be passed as a callable to
+                mechanism of retracing the call stack. For example, sys.exit can be passed as a callable to
                 terminate early. Defaults to None.
             terminal: The flag that determines whether the error should be printed to the terminal using the class
                 logging backend. Defaults to True.
@@ -602,12 +605,12 @@ class Console:
             RuntimeError: If the method is called while using loguru backend without any active logger handles.
         """
 
-        # If the class is disabled, avoids processing the message
-        if not self.is_enabled:
-            return
-
         # Formats the error message. This does nt account for and is not intended to be parsed with loguru.
         formatted_message: str = self.format_message(message, loguru=False)
+
+        # If the class is disabled, uses regular python 'raise exception' functionality.
+        if not self.is_enabled:
+            raise error(formatted_message)
 
         # If the backend is loguru, raises and catches the exception with loguru
         if self._backend == LogBackends.LOGURU and not isinstance(self._logger, NoneType):

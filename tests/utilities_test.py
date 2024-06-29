@@ -250,9 +250,8 @@ def test_console_enable_disable(backend) -> None:
     console.disable()
     assert not console.is_enabled
 
-    # Verifies that echo and error do not process input messages when the console is disabled
+    # Verifies that echo does not process input messages when the console is disabled
     assert not console.echo(message="Test", level=LogLevel.INFO)
-    console.error(message="Test")
 
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
@@ -574,9 +573,11 @@ def test_console_error_handling(backend, tmp_path):
     console.enable()
     console.add_handles(error_terminal=True, error_file=True)
 
-    # Tests disabled console
+    # Tests disabled console. Disabled console is still expected to raise the error itself, but should not do any
+    # additional processing.
     console.disable()
-    console.error("Disabled error", RuntimeError, terminal=True, log=True)
+    with pytest.raises(RuntimeError, match=error_format("Disabled error")):
+        console.error("Disabled error", RuntimeError, terminal=True, log=True)
     if backend == LogBackends.LOGURU:
         assert Path(tmp_path / "error.log").read_text() == ""
     else:

@@ -328,14 +328,13 @@ class Console:
             )
 
         # Message file-writing handle. Functions similarly to terminal-printing handle, but prints to a file that does
-        # not have a rotation window and is retained forever. Compresses the logs to optimize memory use.
+        # not have a rotation window and is retained forever.
         if not isinstance(self._message_log_path, NoneType) and message_file:
             self._logger.add(
                 self._message_log_path,
                 filter=lambda record: record["extra"]["ataraxis_log"] is True
                 and logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
                 colorize=False,
-                compression="zip",
                 enqueue=enqueue,
             )
 

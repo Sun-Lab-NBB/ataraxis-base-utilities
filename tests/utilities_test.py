@@ -299,7 +299,7 @@ def test_console_format_message_errors(backend) -> None:
         # noinspection PyTypeChecker
         console.format_message(message=123)
     with pytest.raises(ValidationError):
-        # noinspection PyTypeChecker
+        # noinspection PyTypeChecker,PyArgumentList
         console.format_message(loguru=None)
 
 
@@ -413,7 +413,7 @@ def test_console_echo(backend, tmp_path, capsys):
 
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
-def test_console_echo_errors(backend, tmp_path):
+def test_console_echo_errors(backend, tmp_path, capsys):
     """Verifies the echo() error-handling functionality."""
     console = Console(
         logger_backend=backend,
@@ -475,6 +475,16 @@ def test_console_echo_errors(backend, tmp_path):
     except Exception as e:
         pytest.fail(f"Valid echo call raised an unexpected exception: {e}")
 
+    # Capture and check the output
+    captured = capsys.readouterr()
+    if backend == LogBackends.LOGURU:
+        assert "Test message" in captured.out
+    else:  # CLICK
+        assert "Test message" in captured.out
+
+    # Clear captured output
+    capsys.readouterr()
+
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_error(backend, tmp_path, capsys):
@@ -504,8 +514,12 @@ def test_console_error(backend, tmp_path, capsys):
     class CustomError(Exception):
         pass
 
-    with pytest.raises(CustomError, match="Custom error"):
+    with pytest.raises(CustomError):
         console.error("Custom error", CustomError, terminal=True, log=True)
+
+    # Capture and check the output
+    captured = capsys.readouterr()
+    assert "Custom error" in captured.err
 
     # Tests callback (only for Loguru backend)
     if backend == LogBackends.LOGURU:
@@ -516,6 +530,7 @@ def test_console_error(backend, tmp_path, capsys):
             callback_called = True
             print("Callback executed", file=sys.stderr)
 
+        # noinspection PyTypeChecker
         console.error("Callback error", ValueError, callback=callback_func, terminal=True, log=True, reraise=False)
         captured = capsys.readouterr()
         assert "Callback error" in captured.err

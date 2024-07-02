@@ -55,8 +55,17 @@ Homepage = "https://github.com/Sun-Lab-NBB/ataraxis-base-utilities"
 Documentation = "https://ataraxis-base-utilities-api-docs.netlify.app/"
 
 # Specifies additional dependencies that can be installed alongside the main library. Anything that is not strictly
-# required to runt he library is found inside one of these specifications.
+# required to run the library is found inside one of these specifications.
 [project.optional-dependencies]
+
+# Run dependencies know to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
+# This specification is used by ataraxis-automation to resolve as many project dependencies with conda over pip as
+# possible.
+conda_run = [
+    "click>=8",
+    "loguru>=0",
+    "pydantic>=2",
+]
 
 # Depepndencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
 conda = [

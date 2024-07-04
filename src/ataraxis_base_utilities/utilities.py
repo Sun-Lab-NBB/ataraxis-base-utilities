@@ -127,15 +127,15 @@ class Console:
 
     @validate_call()
     def __init__(
-            self,
-            logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = LogBackends.LOGURU,
-            message_log_path: Optional[Path | str] = None,
-            error_log_path: Optional[Path | str] = None,
-            debug_log_path: Optional[Path | str] = None,
-            line_width: int = 120,
-            break_long_words: bool = False,
-            break_on_hyphens: bool = False,
-            use_color: bool = True,
+        self,
+        logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = LogBackends.LOGURU,
+        message_log_path: Optional[Path | str] = None,
+        error_log_path: Optional[Path | str] = None,
+        debug_log_path: Optional[Path | str] = None,
+        line_width: int = 120,
+        break_long_words: bool = False,
+        break_on_hyphens: bool = False,
+        use_color: bool = True,
     ) -> None:
         # Message formating parameters.
         if line_width <= 0:
@@ -144,8 +144,10 @@ class Console:
                 f"Expected a value greater than 0, but encountered {line_width}."
             )
             raise ValueError(
-                textwrap.fill(text=message, width=120, break_on_hyphens=break_on_hyphens,
-                              break_long_words=break_long_words))
+                textwrap.fill(
+                    text=message, width=120, break_on_hyphens=break_on_hyphens, break_long_words=break_long_words
+                )
+            )
         self._line_width: int = line_width
         self._break_long_words: bool = break_long_words
         self._break_on_hyphens: bool = break_on_hyphens
@@ -162,8 +164,13 @@ class Console:
                     f"{', '.join(valid_extensions)}, but encountered {debug_log_path}."
                 )
                 raise ValueError(
-                    textwrap.fill(text=message, width=self._line_width, break_on_hyphens=self._break_on_hyphens,
-                                  break_long_words=self._break_long_words))
+                    textwrap.fill(
+                        text=message,
+                        width=self._line_width,
+                        break_on_hyphens=self._break_on_hyphens,
+                        break_long_words=self._break_long_words,
+                    )
+                )
             else:
                 # If the path is valid, verifies the directory portion of the path exists and, if not, creates it.
                 self._ensure_directory_exists(debug_log_path)
@@ -176,8 +183,13 @@ class Console:
                     f"{', '.join(valid_extensions)}, but encountered {message_log_path}."
                 )
                 raise ValueError(
-                    textwrap.fill(text=message, width=self._line_width, break_on_hyphens=self._break_on_hyphens,
-                                  break_long_words=self._break_long_words))
+                    textwrap.fill(
+                        text=message,
+                        width=self._line_width,
+                        break_on_hyphens=self._break_on_hyphens,
+                        break_long_words=self._break_long_words,
+                    )
+                )
             else:
                 self._ensure_directory_exists(message_log_path)
         if not isinstance(error_log_path, NoneType):
@@ -189,8 +201,13 @@ class Console:
                     f"{', '.join(valid_extensions)}, but encountered {error_log_path}."
                 )
                 raise ValueError(
-                    textwrap.fill(text=message, width=self._line_width, break_on_hyphens=self._break_on_hyphens,
-                                  break_long_words=self._break_long_words))
+                    textwrap.fill(
+                        text=message,
+                        width=self._line_width,
+                        break_on_hyphens=self._break_on_hyphens,
+                        break_long_words=self._break_long_words,
+                    )
+                )
             else:
                 self._ensure_directory_exists(error_log_path)
 
@@ -208,16 +225,16 @@ class Console:
 
     @validate_call()
     def add_handles(
-            self,
-            *,
-            remove_existing_handles: bool = True,
-            debug_terminal: bool = False,
-            debug_file: bool = False,
-            message_terminal: bool = True,
-            message_file: bool = False,
-            error_terminal: bool = True,
-            error_file: bool = False,
-            enqueue: bool = False,
+        self,
+        *,
+        remove_existing_handles: bool = True,
+        debug_terminal: bool = False,
+        debug_file: bool = False,
+        message_terminal: bool = True,
+        message_file: bool = False,
+        error_terminal: bool = True,
+        error_file: bool = False,
+        enqueue: bool = False,
     ) -> None:
         """Reconfigures the local loguru Logger class instance to use default project Ataraxis handles.
 
@@ -272,8 +289,12 @@ class Console:
                 "possible"
             )
             raise RuntimeError(
-                textwrap.fill(text=message, width=self._line_width, break_on_hyphens=self._break_on_hyphens,
-                              break_long_words=self._break_long_words)
+                textwrap.fill(
+                    text=message,
+                    width=self._line_width,
+                    break_on_hyphens=self._break_on_hyphens,
+                    break_long_words=self._break_long_words,
+                )
             )
 
         # Debug terminal-printing handle. Filters and works for any message with the log-level at or below DEBUG.
@@ -285,7 +306,7 @@ class Console:
                 sys.stdout,
                 format="<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | <level>{level: <8}</level> | <level>{message}</level>",
                 filter=lambda record: record["extra"]["ataraxis_terminal"] is True
-                                      and record["level"].no <= logger.level("DEBUG").no,
+                and record["level"].no <= logger.level("DEBUG").no,
                 colorize=True,
                 backtrace=False,
                 diagnose=True,
@@ -299,7 +320,7 @@ class Console:
                 sys.stdout,
                 format="<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | <level>{level: <8}</level> | <level>{message}</level>",
                 filter=lambda record: record["extra"]["ataraxis_terminal"] is True
-                                      and logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
+                and logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
                 colorize=True,
                 backtrace=False,
                 diagnose=False,
@@ -315,7 +336,7 @@ class Console:
                 sys.stderr,
                 format="<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | <level>{level: <8}</level> | <level>{message}</level>",
                 filter=lambda record: record["extra"]["ataraxis_terminal"] is True
-                                      and record["level"].no > logger.level("WARNING").no,
+                and record["level"].no > logger.level("WARNING").no,
                 colorize=True,
                 backtrace=True,
                 diagnose=False,
@@ -329,7 +350,7 @@ class Console:
             self._logger.add(
                 self._debug_log_path,
                 filter=lambda record: record["extra"]["ataraxis_log"] is True
-                                      and record["level"].no <= logger.level("DEBUG").no,
+                and record["level"].no <= logger.level("DEBUG").no,
                 colorize=False,
                 retention="2 days",
                 rotation="500 MB",
@@ -342,7 +363,7 @@ class Console:
             self._logger.add(
                 self._message_log_path,
                 filter=lambda record: record["extra"]["ataraxis_log"] is True
-                                      and logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
+                and logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
                 colorize=False,
                 enqueue=enqueue,
             )
@@ -354,7 +375,7 @@ class Console:
             self._logger.add(
                 self._error_log_path,
                 filter=lambda record: record["extra"]["ataraxis_log"] is True
-                                      and record["level"].no >= logger.level("ERROR").no,
+                and record["level"].no >= logger.level("ERROR").no,
                 colorize=False,
                 backtrace=True,
                 diagnose=True,
@@ -450,7 +471,7 @@ class Console:
 
             # Wraps the rest of the message by statically calling textwrap.fill on it with precalculated indent to align
             # the text to the first line.
-            rest_of_message: str = message[len(first_line):].strip()
+            rest_of_message: str = message[len(first_line) :].strip()
             if rest_of_message:
                 subsequent_lines = textwrap.fill(
                     rest_of_message,
@@ -513,8 +534,13 @@ class Console:
                     f"handles or disable() to disable Console operation."
                 )
                 raise RuntimeError(
-                    textwrap.fill(text=message, width=self._line_width, break_on_hyphens=self._break_on_hyphens,
-                                  break_long_words=self._break_long_words))
+                    textwrap.fill(
+                        text=message,
+                        width=self._line_width,
+                        break_on_hyphens=self._break_on_hyphens,
+                        break_long_words=self._break_long_words,
+                    )
+                )
 
             # Formats the message to work with additional loguru-prepended header.
             formatted_message = self.format_message(message=message, loguru=True)
@@ -529,8 +555,12 @@ class Console:
                     "possible"
                 )
                 raise RuntimeError(
-                    textwrap.fill(text=message, width=self._line_width, break_on_hyphens=self._break_on_hyphens,
-                                  break_long_words=self._break_long_words)
+                    textwrap.fill(
+                        text=message,
+                        width=self._line_width,
+                        break_on_hyphens=self._break_on_hyphens,
+                        break_long_words=self._break_long_words,
+                    )
                 )
 
             # For loguru, the message just needs to be logged. Loguru will use available handles to determine where to
@@ -578,14 +608,14 @@ class Console:
 
     @validate_call()
     def error(
-            self,
-            message: str,
-            error: Callable[..., Exception] = RuntimeError,
-            callback: Optional[Callable[[], Any]] = None,
-            *,
-            terminal: bool = True,
-            log: bool = False,
-            reraise: bool = True,
+        self,
+        message: str,
+        error: Callable[..., Exception] = RuntimeError,
+        callback: Optional[Callable[[], Any]] = None,
+        *,
+        terminal: bool = True,
+        log: bool = False,
+        reraise: bool = True,
     ) -> None:
         """Raises and immediately logs the requested error.
 
@@ -632,8 +662,13 @@ class Console:
                     f"method to add handles or disable() to disable Console operation."
                 )
                 raise RuntimeError(
-                    textwrap.fill(text=message, width=self._line_width, break_on_hyphens=self._break_on_hyphens,
-                                  break_long_words=self._break_long_words))
+                    textwrap.fill(
+                        text=message,
+                        width=self._line_width,
+                        break_on_hyphens=self._break_on_hyphens,
+                        break_long_words=self._break_long_words,
+                    )
+                )
 
             # Configures the logger to bind the proper flags to direct the message to log, terminal or nowhere
             self._logger = self._logger.bind(ataraxis_log=log, ataraxis_terminal=terminal)
@@ -645,8 +680,12 @@ class Console:
                     "possible"
                 )
                 raise RuntimeError(
-                    textwrap.fill(text=message, width=self._line_width, break_on_hyphens=self._break_on_hyphens,
-                                  break_long_words=self._break_long_words)
+                    textwrap.fill(
+                        text=message,
+                        width=self._line_width,
+                        break_on_hyphens=self._break_on_hyphens,
+                        break_long_words=self._break_long_words,
+                    )
                 )
 
             with self._logger.catch(reraise=reraise, onerror=callback):

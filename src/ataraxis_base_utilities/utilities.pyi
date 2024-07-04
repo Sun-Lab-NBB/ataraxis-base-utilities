@@ -184,15 +184,18 @@ class Console:
     def error(self, message: str, error: Callable[..., Exception] = ..., callback: Callable[[], Any] | None = None, *, terminal: bool = True, log: bool = False, reraise: bool = True) -> None:
         """Raises and immediately logs the requested error.
 
-        This method allows to flexibly raise errors, while customizing (to a degree) the way errors are logged. Note,
-        if the parent class instance is disabled, the method will return without processing the error.
+        This method allows to flexibly raise errors, while customizing (to a degree) the way errors are logged.
+
+        Notes:
+            If Console is disabled, the method will format the message and raise the input exception using standard
+            python functionality without any logging or additional features.
 
         Args:
             message: The error-message to pass to the error callable.
             error: The callable Exception class to be raised by the method. Defaults to RuntimeError.
             callback: Optional, only for loguru logging backends. The function to call after catching the exception.
                 This can be used to terminate or otherwise alter the runtime without relying on the standard python
-                mechanism of retracing the call stack. For example, sys.exit(1) can be passed as a callable to
+                mechanism of retracing the call stack. For example, sys.exit can be passed as a callable to
                 terminate early. Defaults to None.
             terminal: The flag that determines whether the error should be printed to the terminal using the class
                 logging backend. Defaults to True.

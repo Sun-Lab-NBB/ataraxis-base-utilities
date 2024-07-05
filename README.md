@@ -1,6 +1,6 @@
 # ataraxis-base-utilities
 
-Python library that provides a minimal set of common utilities used by every other project Ataraxis module.
+Python library that provides a minimalistic set of common utilities generally needed to support most other projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-base-utilities)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-base-utilities)
@@ -14,23 +14,21 @@ ___
 
 ## Detailed Description
 
-This library is one of the two 'base-dependency' libraries included in every project Ataraxis module. It aggregates 
-utility functions and classes that are expected to be shared and reused by multiple projects (in our lab and more 
-generally). For example, this library includes the Console class, which provides message and error logging 
-functionality. By using Console, many modules of Ataraxis project benefit from a unified, robust and non-clashing 
-logging framework without having to re-implement it from scratch. 
-
-Overall, separating the implementation of widely used functions into a standalone library makes it possible to iterate 
-upon critical functions without breaking many production modules that use these functions. Additionally, this ensures 
-all modules use the same common API, which makes project-wide refactoring and updates considerably easier. Generally, 
-any class or function that is copied with minor modification into 3 or more modules is a good candidate for inclusion 
+This library is one of the two 'base-dependency' libraries included in every project 'Ataraxis' library. It aggregates 
+utility functions and classes that are expected to be shared and reused by many libraries. For example, this library 
+includes the Console class, which provides message and error logging functionality. By using Console, many Sun Lab 
+libraries benefit from a unified and robust logging framework without having to re-implement it from scratch. Any class 
+or function that is copied with minor modification into five or more modules is a good candidate for inclusion 
 into this library.
+
+While this library comes preconfigured to work for the Sun Lab projects, it can work for any project with minor 
+refactoring.
 ___
 
 ## Features
 
 - Supports Windows, Linux, and OSx.
-- Console class that handles message / error logging.
+- Console class that handles message / error logging via click or loguru backend.
 - Pure-python API.
 - GPL 3 License.
 
@@ -79,13 +77,16 @@ ___
 
 ## Usage
 
+### Console
 Currently, the library contains the Console class, designed to abstract all console interactions. Below is a minimal
 example of how to use the class:
 ```
 # First, import the console class from the library. It also helps to include helper enumerations.
 from ataraxis_base_utilities import Console, LogBackends, LogLevel
 
-# Configure Console to write messages to files in addition to terminals
+# The example below proceeds with using de novo Console class instantiation.
+
+# Configure Console to write messages to files in addition to terminals.
 debug_log: str = "debug.json"
 error_log_path: str = "error.txt"
 message_log_path: str = "message.log"
@@ -99,7 +100,7 @@ file_console.add_handles(remove_existing_handles=True, debug_file=True, message_
 # Next, the console has to be enabled. By default, it is disabled and does not process any echo() or error() calls.
 file_console.enable()
 
-# Attempts to print debug message, which will go to file, but not terminal (terminal handle for debug was not added)
+# Attempts to print debug message, which will go to file, but not terminal (terminal handle for debug was not added).
 message: str = "Hi there! I am debug."
 file_console.echo(message=message, level=LogLevel.DEBUG, terminal=True, log=True)
 
@@ -107,9 +108,9 @@ file_console.echo(message=message, level=LogLevel.DEBUG, terminal=True, log=True
 message = "Hi there! I am warning."
 file_console.echo(message=message, level=LogLevel.WARNING, terminal=True, log=False)
 
-# Raises an error, logs it, but does not break runtime
+# Raises an error, logs it, but does not break runtime.
 message = "Oh no! I am error."
-file_console.error(message=message, error=ValueError, reraise=False, terminal=True, log=True)
+file_console.error(message=message, error=ValueError, callback=None, reraise=False, terminal=True, log=True)
 
 # Disabling the console allows calling methods, but they do nothing.
 file_console.disable()
@@ -117,17 +118,17 @@ message = "Too bad you will never see me!"
 # echo returns False when console is disabled, so you can always check what is going on if you do not see anything!
 assert not file_console.echo(message=message, level=LogLevel.ERROR, terminal=True, log=False)
 
-# Click is available as an alternative backend
+# Click is available as an alternative backend.
 click_console = Console(logger_backend=LogBackends.CLICK)
 
-# Click does not use handles, so console just needs to be enabled
+# Click does not use handles, so console just needs to be enabled.
 click_console.enable()
 
 # Echo works very similar to loguru, but log levels do not do much.
 message = "I may not be much, but I am honest work!"
 click_console.echo(message, log=False)
 
-# Not super important, but you can also just format strings using format_message()
+# Not super important, but you can also just format strings using format_message().
 message = ("This is a very long message. So long in fact, that it exceeds the default line limit of Console class. "
            "format_message() will automatically wrap the message as needed to fit into the width-limit.")
 print(click_console.format_message(message=message, loguru=False))
@@ -138,13 +139,24 @@ message = "I may be excessive, but so what?"
 click_console.error(message, ValueError, reraise=True, terminal=True, log=False)
 ```
 
+### Additional notes on usage:
+Generally, console is designed to be used across many libraries that may also be dependent on each other. Therefore, 
+it should be used similar to how it is advised to use Loguru for logging: when using Console in a library, do not call 
+add_handles() or enable() methods. The only exception to this rule is when running in interactive mode (cli, benchmark, 
+script) that is known to be the highest hierarchy (nothing imports your code, it imports everything).
+
+To facilitate correct usage, the library exposes 'console' variable that is preconfigured to use Loguru backend and is 
+not enabled by default. You can use this variable to add Console-backed printing and logging functionality to your 
+library. Whenever your library is imported, the end-user can then enable() and add_handles() using the same 'console'
+variable, which will automatically work for all console-based statements across all libraries. This way, the exact 
+configuration (what they want to see) is left up to end-user, but your code will still raise errors and can be debugged
+using custom logging configurations.
 ___
 
 ## API Documentation
 
 See the [API documentation](https://ataraxis-base-utilities-api-docs.netlify.app/) for the
-detailed description of the methods and classes exposed by components of this library. The documentation also 
-covers any available cli/gui-interfaces (such as benchmarks).
+detailed description of the methods and classes exposed by components of this library.
 ___
 
 ## Developers

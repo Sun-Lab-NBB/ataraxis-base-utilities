@@ -7,6 +7,14 @@ from os import PathLike as PathLike
 from pathlib import Path
 from typing import Any, Literal
 
+def default_callback(__error: str | int | None = None, /) -> Any:
+    """The default callback function to be used by Console class error() method to abort execution without re-stating
+    the caught exception.
+
+    This is a simple wrapper over sys.exit() that can be used as the input to 'onerror' argument of loguru catch()
+    method to work with the predefined logging format
+    """
+
 class LogLevel(Enum):
     """Maps valid literal arguments that can be passed to some Console class methods to programmatically callable
     variables.
@@ -41,21 +49,20 @@ class Console:
 
     Args:
         logger_backend: Specifies the backend used to manage terminal and file logs. Valid values are available through
-            LogBackends enumeration and are currently limited to LOGURU and CLICK. Defaults to LOGURU.
+            LogBackends enumeration and are currently limited to LOGURU and CLICK.
         line_width: The maximum number of characters in a single line of displayed text. This is primarily used to
-            limit the width of the text block as it is displayed in the terminal and saved to log files. Defaults to
-            120.
+            limit the width of the text block as it is displayed in the terminal and saved to log files.
         message_log_path: The path to the file used to log non-error messages (info to warning levels). If not provided
-            (set to None), logging non-error messages will be disabled. Defaults to None.
+            (set to None), logging non-error messages will be disabled.
         error_log_path: The path to the file used to log error messages (error and critical levels). If not provided
-            (set to None), logging non-error messages will be disabled. Defaults to None.
+            (set to None), logging non-error messages will be disabled.
         debug_log_path: The path to the file used to log debug messages (detail levels vary). If not provided
-            (set to None), logging non-error messages will be disabled. Defaults to None.
+            (set to None), logging non-error messages will be disabled.
         break_long_words: Determines whether long words can be broken-up when then text block is
-            formatted to fit the width requirement. Defaults to False.
+            formatted to fit the width requirement.
         break_on_hyphens: determines whether breaking sentences on hyphens is allowed when text
-            block is formatted to fit the width requirement. Defaults to False.
-        use_color: Determines whether terminal output should be colorized. Defaults to True.
+            block is formatted to fit the width requirement.
+        use_color: Determines whether terminal output should be colorized.
 
     Attributes:
         _line_width: Stores the maximum allowed text block width, in characters.
@@ -105,7 +112,6 @@ class Console:
 
         Args:
             remove_existing_handles: Determines whether to remove all existing handles before adding new loguru handles.
-                Defaults to True.
             debug_terminal: Determines whether to add the handle that prints debug-level messages to terminal.
             debug_file: Determines whether to add the handle that writes debug-level messages to log file.
             message_terminal: Same as debug_terminal, but for information, success and warning level messages.
@@ -139,8 +145,7 @@ class Console:
         only the directory path is evaluated.
 
         Args:
-            path: The string-path to be processed. Should use os-defined delimiters, as os.path.splitext() is used to
-                decompose the path into nodes.
+            path: The Path to be processed.
         """
     def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the standards used across Ataraxis and related projects.
@@ -148,7 +153,7 @@ class Console:
         Args:
             message: The text string to format to display according to Ataraxis standards.
             loguru: A flag that determines if the message is intended to be processed via loguru backend or
-                another method or backend (e.g.: Exception class or click backend). Defaults to False.
+                another method or backend (e.g.: Exception class or click backend).
 
         Returns:
             Formatted text message (augmented with newline and other service characters as necessary).
@@ -156,7 +161,7 @@ class Console:
         Raises:
             ValidationError: If the 'message' argument is not a string.
         """
-    def echo(self, message: str, level: LogLevel = ..., *, terminal: bool = True, log: bool = False) -> bool:
+    def echo(self, message: str, level: LogLevel = ..., *, terminal: bool = True, log: bool = True) -> bool:
         """Formats the input message according to the class configuration and outputs it to the terminal, file or both.
 
         In a way, this can be seen as a better 'print'. It does a lot more than just print though, especially when the
@@ -168,10 +173,10 @@ class Console:
                 through the LogLevel enumeration, but is primarily intended to be used for infor, success and warning
                 messages.
             terminal: The flag that determines whether the message should be printed to the terminal using the class
-                logging backend. Defaults to True.
+                logging backend.
             log: The flag that determines whether the message should be written to a file using the class logging
                 backend. Note, if valid message_log_path or debug_log_path were not provided, this flag will be
-                meaningless, as there will be no handle to write ot file. Defaults to False.
+                meaningless, as there will be no handle to write ot file.
 
         Returns:
             True if the message has been processed and False if the message cannot be printed because the Console is
@@ -181,7 +186,7 @@ class Console:
             ValidationError: If any of the input arguments are not of a valid type.
             RuntimeError: If the method is called while using loguru backend without any active logger handles.
         """
-    def error(self, message: str, error: Callable[..., Exception] = ..., callback: Callable[[], Any] | None = None, *, terminal: bool = True, log: bool = False, reraise: bool = True) -> None:
+    def error(self, message: str, error: Callable[..., Exception] = ..., callback: Callable[[], Any] | None = ..., *, terminal: bool = True, log: bool = True, reraise: bool = False) -> None:
         """Raises and immediately logs the requested error.
 
         This method allows to flexibly raise errors, while customizing (to a degree) the way errors are logged.
@@ -192,19 +197,19 @@ class Console:
 
         Args:
             message: The error-message to pass to the error callable.
-            error: The callable Exception class to be raised by the method. Defaults to RuntimeError.
+            error: The callable Exception class to be raised by the method.
             callback: Optional, only for loguru logging backends. The function to call after catching the exception.
                 This can be used to terminate or otherwise alter the runtime without relying on the standard python
                 mechanism of retracing the call stack. For example, sys.exit can be passed as a callable to
-                terminate early. Defaults to None.
+                terminate early.
             terminal: The flag that determines whether the error should be printed to the terminal using the class
-                logging backend. Defaults to True.
+                logging backend.
             log: The flag that determines whether the error should be written to a file using the class logging backend.
                 Note, if valid error_log_path was not provided, this flag will be meaningless, as there will be no
-                handle to write ot file. Defaults to False.
+                handle to write ot file.
             reraise: The flag that determines whether the error is to be reraised after being caught and handled by
                 loguru backend. For non-loguru backends, this determines if the error is raised in the first place or
-                if the method only logs the error message. Defaults to True.
+                if the method only logs the error message.
 
         Raises:
             ValidationError: If any of the inputs are not of a valid type.

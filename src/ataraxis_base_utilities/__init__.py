@@ -7,6 +7,10 @@ require additional configurations, as most modules from this library come with d
 many places.
 """
 
-from .utilities import Console, LogBackends, LogLevel
+from .utilities import Console, LogLevel, LogBackends
 
-__all__ = ["Console", "LogLevel", "LogBackends"]
+# Preconfigures and exposes Console class instance as a variable, similar to how Loguru exposes logger. This instance
+# can be used globally instead of defining a custom console variable.
+console: Console = Console(logger_backend=LogBackends.LOGURU)
+
+__all__ = ["console", "Console", "LogLevel", "LogBackends"]

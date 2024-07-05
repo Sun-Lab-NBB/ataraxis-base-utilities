@@ -1,29 +1,39 @@
-"""This module contains service utility classes and functions used by most packages and modules offered through this
-library.
+"""This module contains utility classes and functions used by most other project Ataraxis and Sun Lab libraries.
 
-The service functions are used to provide common low-level functionality that should be unified and widely available
-to all library components. The classes and functions from this module are generally not intended for use outside of
-other Sun Lab projects, although they can be adopted after light reconfiguration.
+This library is used to provide common low-level functionality that should be unified and widely available to many
+libraries. For example, this includes Logging and Terminal Messaging (Console class) and, in near future, will be
+expanded to include other widely used utility functions. The classes and functions from this module are generally
+specialized for Sub Lab standards, but they can be adopted after light reconfiguration to work for external projects.
 """
 
 import os
-import sys
-import textwrap
-import traceback
-from collections.abc import Callable
-from enum import Enum
-from functools import wraps
 from os import PathLike
-from pathlib import Path
+import sys
+from enum import Enum
 from types import NoneType
 from typing import Any, Literal, Optional
+from pathlib import Path
+import textwrap
+from functools import wraps
+import traceback
+from collections.abc import Callable
 
 import click
 from loguru import logger
+from pydantic import validate_call
 
 # noinspection PyProtectedMember
 from loguru._logger import Logger
-from pydantic import validate_call
+
+
+def default_callback(__error: str | int | None = None) -> Any:
+    """The default callback function to be used by Console class error() method to abort execution without re-stating
+    the caught exception.
+
+    This is a simple wrapper over sys.exit() that can be used as the input to 'onerror' argument of loguru catch()
+    method to work with the predefined logging format
+    """
+    sys.exit("Runtime aborted.")
 
 
 class LogLevel(Enum):
@@ -91,21 +101,20 @@ class Console:
 
     Args:
         logger_backend: Specifies the backend used to manage terminal and file logs. Valid values are available through
-            LogBackends enumeration and are currently limited to LOGURU and CLICK. Defaults to LOGURU.
+            LogBackends enumeration and are currently limited to LOGURU and CLICK.
         line_width: The maximum number of characters in a single line of displayed text. This is primarily used to
-            limit the width of the text block as it is displayed in the terminal and saved to log files. Defaults to
-            120.
+            limit the width of the text block as it is displayed in the terminal and saved to log files.
         message_log_path: The path to the file used to log non-error messages (info to warning levels). If not provided
-            (set to None), logging non-error messages will be disabled. Defaults to None.
+            (set to None), logging non-error messages will be disabled.
         error_log_path: The path to the file used to log error messages (error and critical levels). If not provided
-            (set to None), logging non-error messages will be disabled. Defaults to None.
+            (set to None), logging non-error messages will be disabled.
         debug_log_path: The path to the file used to log debug messages (detail levels vary). If not provided
-            (set to None), logging non-error messages will be disabled. Defaults to None.
+            (set to None), logging non-error messages will be disabled.
         break_long_words: Determines whether long words can be broken-up when then text block is
-            formatted to fit the width requirement. Defaults to False.
+            formatted to fit the width requirement.
         break_on_hyphens: determines whether breaking sentences on hyphens is allowed when text
-            block is formatted to fit the width requirement. Defaults to False.
-        use_color: Determines whether terminal output should be colorized. Defaults to True.
+            block is formatted to fit the width requirement.
+        use_color: Determines whether terminal output should be colorized.
 
     Attributes:
         _line_width: Stores the maximum allowed text block width, in characters.
@@ -255,7 +264,6 @@ class Console:
 
         Args:
             remove_existing_handles: Determines whether to remove all existing handles before adding new loguru handles.
-                Defaults to True.
             debug_terminal: Determines whether to add the handle that prints debug-level messages to terminal.
             debug_file: Determines whether to add the handle that writes debug-level messages to log file.
             message_terminal: Same as debug_terminal, but for information, success and warning level messages.
@@ -416,23 +424,14 @@ class Console:
         only the directory path is evaluated.
 
         Args:
-            path: The string-path to be processed. Should use os-defined delimiters, as os.path.splitext() is used to
-                decompose the path into nodes.
+            path: The Path to be processed.
         """
-        # Checks if the path has an extension
-        _, ext = os.path.splitext(path)
-
-        if ext:
-            # If the path has an extension, it is considered a file path. Then, extracts the directory part of the path.
-            directory = os.path.dirname(path)
+        # If path is a file (because it has a suffix), ensures the parent directory of the file, if any, exists.
+        if path.suffix != "":
+            path.parent.mkdir(parents=True, exist_ok=True)
         else:
-            # If the path doesn't have an extension, it is considered a directory path.
-            directory = str(path)
-
-        # Checks if the directory hierarchy exists.
-        if not os.path.exists(directory) and directory != "":
-            # If the directory hierarchy doesn't exist, creates it.
-            os.makedirs(directory)
+            # If it's a directory path, ensures the directory exists.
+            path.mkdir(parents=True, exist_ok=True)
 
     @validate_call()
     def format_message(self, message: str, *, loguru: bool = False) -> str:
@@ -441,7 +440,7 @@ class Console:
         Args:
             message: The text string to format to display according to Ataraxis standards.
             loguru: A flag that determines if the message is intended to be processed via loguru backend or
-                another method or backend (e.g.: Exception class or click backend). Defaults to False.
+                another method or backend (e.g.: Exception class or click backend).
 
         Returns:
             Formatted text message (augmented with newline and other service characters as necessary).
@@ -495,7 +494,7 @@ class Console:
             )
 
     @validate_call()
-    def echo(self, message: str, level: LogLevel = LogLevel.INFO, *, terminal: bool = True, log: bool = False) -> bool:
+    def echo(self, message: str, level: LogLevel = LogLevel.INFO, *, terminal: bool = True, log: bool = True) -> bool:
         """Formats the input message according to the class configuration and outputs it to the terminal, file or both.
 
         In a way, this can be seen as a better 'print'. It does a lot more than just print though, especially when the
@@ -507,10 +506,10 @@ class Console:
                 through the LogLevel enumeration, but is primarily intended to be used for infor, success and warning
                 messages.
             terminal: The flag that determines whether the message should be printed to the terminal using the class
-                logging backend. Defaults to True.
+                logging backend.
             log: The flag that determines whether the message should be written to a file using the class logging
                 backend. Note, if valid message_log_path or debug_log_path were not provided, this flag will be
-                meaningless, as there will be no handle to write ot file. Defaults to False.
+                meaningless, as there will be no handle to write ot file.
 
         Returns:
             True if the message has been processed and False if the message cannot be printed because the Console is
@@ -611,11 +610,11 @@ class Console:
         self,
         message: str,
         error: Callable[..., Exception] = RuntimeError,
-        callback: Optional[Callable[[], Any]] = None,
+        callback: Optional[Callable[[], Any]] = default_callback,
         *,
         terminal: bool = True,
-        log: bool = False,
-        reraise: bool = True,
+        log: bool = True,
+        reraise: bool = False,
     ) -> None:
         """Raises and immediately logs the requested error.
 
@@ -627,19 +626,19 @@ class Console:
 
         Args:
             message: The error-message to pass to the error callable.
-            error: The callable Exception class to be raised by the method. Defaults to RuntimeError.
+            error: The callable Exception class to be raised by the method.
             callback: Optional, only for loguru logging backends. The function to call after catching the exception.
                 This can be used to terminate or otherwise alter the runtime without relying on the standard python
                 mechanism of retracing the call stack. For example, sys.exit can be passed as a callable to
-                terminate early. Defaults to None.
+                terminate early.
             terminal: The flag that determines whether the error should be printed to the terminal using the class
-                logging backend. Defaults to True.
+                logging backend.
             log: The flag that determines whether the error should be written to a file using the class logging backend.
                 Note, if valid error_log_path was not provided, this flag will be meaningless, as there will be no
-                handle to write ot file. Defaults to False.
+                handle to write ot file.
             reraise: The flag that determines whether the error is to be reraised after being caught and handled by
                 loguru backend. For non-loguru backends, this determines if the error is raised in the first place or
-                if the method only logs the error message. Defaults to True.
+                if the method only logs the error message.
 
         Raises:
             ValidationError: If any of the inputs are not of a valid type.

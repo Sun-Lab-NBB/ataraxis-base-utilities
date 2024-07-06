@@ -257,8 +257,8 @@ All environments used during development are exported as .yml files and as spec.
 The environment snapshots were taken on each of the three explicitly supported OS families: Windows 11, OSx (M1) 14.5
 and Linux Ubuntu 22.04 LTS.
 
-**Note!** Since the OSx environment was built against M1 (Apple Silicon) platform and may not work on Intel-based Apple 
-devices.
+**Note!** Since the OSx environment was built against an M1 (Apple Silicon) platform and may not work on Intel-based 
+Apple devices.
 
 To install the development environment for your OS:
 
@@ -269,7 +269,7 @@ To install the development environment for your OS:
        environment with already installed tox and call ```tox -e import```.
     2. **_Alternative Method_**: Run ```conda env create -f ENVNAME.yml``` or ```mamba env create -f ENVNAME.yml```. 
        Replace 'ENVNAME.yml' with the name of the environment you want to install (axbu_dev_osx for OSx, 
-       axbu_dev_win for Windows and axbu_dev_lin for Linux).
+       axbu_dev_win for Windows, and axbu_dev_lin for Linux).
 
 **Hint:** while only the platforms mentioned above were explicitly evaluated, this project is likely to work on any 
 common OS, but may require additional configurations steps.

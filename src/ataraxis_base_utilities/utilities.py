@@ -106,7 +106,7 @@ class Console:
             (set to None), logging non-error messages will be disabled.
         debug_log_path: The path to the file used to log debug messages (detail levels vary). If not provided
             (set to None), logging non-error messages will be disabled.
-        break_long_words: Determines whether long words can be broken-up when then text block is
+        break_long_words: Determines whether long words can be broken up when then text block is
             formatted to fit the width requirement.
         break_on_hyphens: determines whether breaking sentences on hyphens is allowed when text
             block is formatted to fit the width requirement.
@@ -336,7 +336,7 @@ class Console:
 
         # Error terminal-printing-handle. Does not include additional diagnostic information, but includes the whole
         # backtrace of the error message. It works similarly to default python error traces, but without mandatory
-        # runtime termination. Works for ERROR and above level messages. Unlike other two handles, writes to
+        # runtime termination. Works for ERROR+ level messages. Unlike other two handles, writes to
         # stderr, rather than stdout.
         if error_terminal:
             # noinspection LongLine
@@ -618,7 +618,7 @@ class Console:
     ) -> None:
         """Raises and immediately logs the requested error.
 
-        This method allows to flexibly raise errors, while customizing (to a degree) the way errors are logged.
+        This method allows flexibly raising errors, while customizing (to a degree) the way errors are logged.
 
         Notes:
             If Console is disabled, the method will format the message and raise the input exception using standard

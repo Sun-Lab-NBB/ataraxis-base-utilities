@@ -579,7 +579,7 @@ def test_console_error_output_options(backend, tmp_path, capsys):
     with open(tmp_path / "error.log", "r") as f:
         assert "Log only" in f.read()
 
-    # Tests neither terminal nor log
+    # Tests both terminal and log output disabled
     console.error("Neither", RuntimeError, callback=None, terminal=False, log=False, reraise=False)
     captured = capsys.readouterr()
     assert captured.err == ""

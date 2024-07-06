@@ -514,7 +514,7 @@ class Console:
 
         Returns:
             True if the message has been processed and False if the message cannot be printed because the Console is
-                disabled.
+            disabled.
 
         Raises:
             ValidationError: If any of the input arguments are not of a valid type.

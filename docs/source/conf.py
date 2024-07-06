@@ -6,7 +6,7 @@ project = 'ataraxis-base-utilities'
 # noinspection PyShadowingBuiltins
 copyright = '2024, Ivan Kondratyev & Sun Lab'
 author = 'Ivan Kondratyev'
-release = importlib_metadata.version("ataraxis-base-utilities")  # Extracts project version from the .toml file.
+release = importlib_metadata.version("ataraxis-base-utilities")  # Extracts the project version from the .toml file.
 
 # -- General configuration ---------------------------------------------------
 extensions = [

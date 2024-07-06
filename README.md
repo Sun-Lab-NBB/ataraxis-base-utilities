@@ -277,6 +277,13 @@ common OS, but may require additional configurations steps.
 Since the release of [ataraxis-automation](https://github.com/Sun-Lab-NBB/ataraxis-automation) version 2.0.0 you can 
 also create the development environment from scratch via pyproject.toml dependencies. To do this, use 
 ```tox -e create``` from project root directory.
+
+### Automation Troubleshooting
+Many packages used in 'tox' automation pipelines (uv, mypy, ruff) and 'tox' itself are prone to various failures. In 
+most cases, this is related to their caching behavior. Despite a considerable effort to disable caching behavior known 
+to be problematic, in some cases it cannot or should not be eliminated. If you run into an unintelligible error with 
+any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually 
+or via a cli command is very likely to fix the issue.
 ___
 
 ## Versioning

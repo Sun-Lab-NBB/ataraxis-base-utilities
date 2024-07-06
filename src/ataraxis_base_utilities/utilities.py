@@ -163,7 +163,8 @@ class Console:
         self._use_color: bool = use_color
 
         # Verifies that the input paths to log files, if any, use valid file extensions and are otherwise well-formed.
-        valid_extensions: set[str] = {".txt", ".log", ".json"}  # Stores currently supported log file extensions
+        # Stores currently supported log file extensions
+        valid_extensions: tuple[str, str, str] = (".txt", ".log", ".json")
         if not isinstance(debug_log_path, NoneType):
             debug_log_path = Path(debug_log_path)
             if debug_log_path.suffix not in valid_extensions:

@@ -1,6 +1,5 @@
 name: axbu_dev_osx
 channels:
-  - bioconda
   - conda-forge
 dependencies:
   - alabaster=0.7.16=pyhd8ed1ab_0
@@ -134,7 +133,8 @@ dependencies:
   - pip:
       - annotated-types==0.7.0
       - appdirs==1.4.4
-      - ataraxis-automation==2.0.0
+      - ataraxis-automation==2.0.1
+      - ataraxis-base-utilities==1.0.2
       - build==1.2.1
       - loguru==0.7.2
       - pydantic==2.8.2

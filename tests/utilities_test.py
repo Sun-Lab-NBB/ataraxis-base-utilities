@@ -87,7 +87,7 @@ def test_console_invalid_initialization_line_width(backend) -> None:
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_invalid_initialization_log_paths(backend, temp_dir) -> None:
     """Tests invalid path inputs during Console initialization."""
-    valid_extensions: set[str] = {".txt", ".log", ".json"}
+    valid_extensions: tuple[str, str, str] = (".txt", ".log", ".json")
 
     # Uses a non-supported 'zipp' extension to trigger ValueErrors.
     message = (

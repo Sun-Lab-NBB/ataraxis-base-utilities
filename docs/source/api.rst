@@ -3,7 +3,6 @@
 
 Utilities Module
 ================
-
 .. automodule:: ataraxis_base_utilities.utilities
    :members:
    :undoc-members:

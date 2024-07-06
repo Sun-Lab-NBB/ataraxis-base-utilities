@@ -1,6 +1,6 @@
 # ataraxis-base-utilities
 
-Python library that provides a minimalistic set of common utilities generally needed to support most other projects.
+Python library that provides a minimalistic set of shared utility functions used to support most other Sun Lab projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-base-utilities)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-base-utilities)
@@ -14,24 +14,26 @@ ___
 
 ## Detailed Description
 
-This library is one of the two 'base-dependency' libraries included in every project 'Ataraxis' library. It aggregates 
-utility functions and classes that are expected to be shared and reused by many libraries. For example, this library 
-includes the Console class, which provides message and error logging functionality. By using Console, many Sun Lab 
-libraries benefit from a unified and robust logging framework without having to re-implement it from scratch. Any class 
-or function that is copied with minor modification into five or more modules is a good candidate for inclusion 
-into this library.
+This library is one of the two 'base' dependency libraries used by every other Sun Lab project (the other being 
+[ataraxis-automation](https://github.com/Sun-Lab-NBB/ataraxis-automation)). It aggregates common utility functions 
+that are expected to be shared and reused by many other lab projects, such as message and error logging. This library is
+designed to avoid re-implementing the same set of utility features for every lab projects. This is important, since most
+of our codebases employ a highly modular and decentralized design with many independent subprojects dynamically 
+assembled into functional pipelines. Generally, any class or function that is copied with minor modifications into five 
+or more Sun Lab projects is a good candidate for inclusion into this library.
 
-While this library comes preconfigured to work for the Sun Lab projects, it can work for any project with minor 
-refactoring.
+Despite a strong focus on supporting Sun Lab projects, this library can be used in non-lab project with minor 
+refactoring. Specifically, anyone willing to reuse this library in their project may need to adjust the default values
+and configurations used throughout this library to match their specific needs. Otherwise, it should be readily 
+integrable with any other project due to its minimalistic design (both in terms of features and dependencies).
 ___
 
 ## Features
 
 - Supports Windows, Linux, and OSx.
-- Console class that handles message / error logging via click or loguru backend.
+- Loguru-based Console class that provides message and logging functionality.
 - Pure-python API.
 - GPL 3 License.
-
 ___
 
 ## Table of Contents
@@ -41,6 +43,7 @@ ___
 - [Usage](#usage)
 - [API Documentation](#api-documentation)
 - [Developers](#developers)
+- [Versioning](#versioning)
 - [Authors](#authors)
 - [License](#license)
 - [Acknowledgements](#Acknowledgments)
@@ -78,13 +81,45 @@ ___
 ## Usage
 
 ### Console
-Currently, the library contains the Console class, designed to abstract all console interactions. Below is a minimal
-example of how to use the class:
+The Console class provides message and error display (via terminal) and logging (to files) functionality. Primarily, 
+this is realized through the [loguru](https://github.com/Delgan/loguru) backend. It is highly advised checking loguru 
+documentation to understand how Console functions under-the-hood, although this is not strictly required. As a secondary
+backend, the class uses [click](https://click.palletsprojects.com/en/8.1.x/), so it may be beneficial to review its 
+documentation if loguru backend is not appropriate for your specific use case.
+
+This is a minimal example of how to use the class, assuming you want to use default parameters:
+```
+# Import 'console'
+from ataraxis_base_utilities import console, LogLevel
+
+# 'console' is a global variable that functions similar to Loguru 'logger'. It is ready to be used right after import
+
+# When imported, console is DISABLED. It will not print anything and will raise errors just like python does.
+
+# These two methods configure (add handles) to the console and enable it to print and log text and error messages.
+# To understand the purpose of 'add_handles()' step, review 'loguru' documentation and the API / source code for the 
+# Console class. Generally, it configures 'sinks' that determine how 'echo()' and 'error()' generated messages are 
+# processed by the loguru backend.
+console.add_handles()
+console.enable()
+
+# This functions just like 'print' does. This sends the message using 'Info' log level. See Loguru documentation for 
+# details on log levels.
+console.echo('Message to Print')
+
+# This functions just like 'raise RuntimeError()' does. Use this in place of typical exceptions to allow logging them 
+# when console is enabled.
+console.error('Error message')
+
+# This shows how you can chose what error is raised.
+console.error('Error message', error=ValueError)
+```
+
+This is a more detailed example that also showcases some of the configuration parameters used by Console methods and 
+de novo class instantiation:
 ```
 # First, import the console class from the library. It also helps to include helper enumerations.
 from ataraxis_base_utilities import Console, LogBackends, LogLevel
-
-# The example below proceeds with using de novo Console class instantiation.
 
 # Configure Console to write messages to files in addition to terminals.
 debug_log: str = "debug.json"
@@ -114,6 +149,7 @@ file_console.error(message=message, error=ValueError, callback=None, reraise=Fal
 
 # Disabling the console allows calling methods, but they do nothing.
 file_console.disable()
+
 message = "Too bad you will never see me!"
 # echo returns False when console is disabled, so you can always check what is going on if you do not see anything!
 assert not file_console.echo(message=message, level=LogLevel.ERROR, terminal=True, log=False)
@@ -140,10 +176,11 @@ click_console.error(message, ValueError, reraise=True, terminal=True, log=False)
 ```
 
 ### Additional notes on usage:
-Generally, console is designed to be used across many libraries that may also be dependent on each other. Therefore, 
-it should be used similar to how it is advised to use Loguru for logging: when using Console in a library, do not call 
-add_handles() or enable() methods. The only exception to this rule is when running in interactive mode (cli, benchmark, 
-script) that is known to be the highest hierarchy (nothing imports your code, it imports everything).
+Generally, Console class is designed to be used across many libraries that may also be dependent on each other. 
+Therefore, it should be used similar to how it is advised to use Loguru for logging: when using Console in a library, 
+do not call add_handles() or enable() methods. The only exception to this rule is when running in interactive mode 
+(cli, benchmark, script) that is known to be the highest hierarchy (nothing else imports your code, it imports 
+everything else).
 
 To facilitate correct usage, the library exposes 'console' variable that is preconfigured to use Loguru backend and is 
 not enabled by default. You can use this variable to add Console-backed printing and logging functionality to your 
@@ -155,8 +192,8 @@ ___
 
 ## API Documentation
 
-See the [API documentation](https://ataraxis-base-utilities-api-docs.netlify.app/) for the
-detailed description of the methods and classes exposed by components of this library.
+See the [API documentation](https://ataraxis-base-utilities-api-docs.netlify.app/) for the detailed description of the 
+methods and classes exposed by components of this library.
 ___
 
 ## Developers
@@ -172,9 +209,10 @@ that were used during development from the included .yml files.
 3. Install development dependencies. You have multiple options of satisfying this requirement:
     1. **_Preferred Method:_** Use conda or pip to install
        [tox](https://tox.wiki/en/latest/config.html#provision_tox_env) or use an environment that has it installed and
-       call ```tox -e import-env``` to automatically import the os-specific development environment included with the
-       source code in your local conda distribution. Alternatively, see [environments](#environments) section for other
-       environment installation methods.
+       call ```tox -e import``` to automatically import the os-specific development environment included with the
+       source code in your local conda distribution. Alternatively, you can use ```tox -e create``` to create the 
+       environment from scratch and automatically install the necessary dependencies using pyproject.toml file. See 
+       [environments](#environments) section for other environment installation methods.
     2. Run ```python -m pip install .'[dev]'``` command to install development dependencies and the library using 
        pip. On some systems, you may need to use a slightly modified version of this command: 
        ```python -m pip install .[dev]```.
@@ -182,10 +220,11 @@ that were used during development from the included .yml files.
        and do not intend to run any code outside the predefined project automation pipelines, tox will automatically
        install all required dependencies for each task.
 
-**Note:** When using tox automation, having a local version of the library may interfere with tox methods that attempt
-to build the library using an isolated environment. It is advised to remove the library from your test environment, or
-disconnect from the environment, prior to running any tox tasks. This problem is rarely observed with the latest version
-of the automation pipeline, but is worth mentioning.
+**Note:** When using tox automation, having a local version of the library may interfere with tox tasks that attempt
+to build the library using an isolated environment. While the problem is rare, our 'tox' pipelines automatically 
+install and uninstall the project from its' conda environment. This relies on a static tox configuration and will only 
+target the project-specific environment, so it is advised to always ```tox -e import``` or ```tox -e create``` the 
+project environment using 'tox' before running other tox commands.
 
 ### Additional Dependencies
 
@@ -199,17 +238,27 @@ In addition to installing the required python packages, separately install the f
 ### Development Automation
 
 This project comes with a fully configured set of automation pipelines implemented using 
-[tox](https://tox.wiki/en/latest/config.html#provision_tox_env). 
-Check [tox.ini file](tox.ini) for details about available pipelines and their implementation.
+[tox](https://tox.wiki/en/latest/config.html#provision_tox_env). Check [tox.ini file](tox.ini) for details about 
+available pipelines and their implementation. Alternatively, call ```tox list``` from the root directory of the project
+to see the list of available tasks.
 
-**Note!** All commits to this library have to successfully complete the ```tox``` task before being pushed to GitHub. 
+Also, it may be beneficial to check the documentation for the 
+[ataraxis-automation](https://github.com/Sun-Lab-NBB/ataraxis-automation) library. This library provides low-level 
+scripts used by different 'tox' tasks. Importantly, all conda environment manipulations are realized through scripts 
+offered by our automation library. The documentation for the library includes additional information on all available 
+'tox' tasks and general notes on writing custom tox.ini files to work with our automation scripts.
+
+**Note!** All commits to this project have to successfully complete the ```tox``` task before being pushed to GitHub. 
 To minimize the runtime task for this task, use ```tox --parallel```.
 
 ### Environments
 
 All environments used during development are exported as .yml files and as spec.txt files to the [envs](envs) folder.
-The environment snapshots were taken on each of the three supported OS families: Windows 11, OSx 14.5 and
-Ubuntu 22.04 LTS.
+The environment snapshots were taken on each of the three explicitly supported OS families: Windows 11, OSx (M1) 14.5
+and Linux Ubuntu 22.04 LTS.
+
+**Note!** Since the OSx environment was built against M1 (Apple Silicon) platform and may not work on Intel-based Apple 
+devices.
 
 To install the development environment for your OS:
 
@@ -217,15 +266,24 @@ To install the development environment for your OS:
 2. ```cd``` into the [envs](envs) folder.
 3. Use one of the installation methods below:
     1. **_Preferred Method_**: Install [tox](https://tox.wiki/en/latest/config.html#provision_tox_env) or use another
-       environment with already installed tox and call ```tox -e import-env```.
+       environment with already installed tox and call ```tox -e import```.
     2. **_Alternative Method_**: Run ```conda env create -f ENVNAME.yml``` or ```mamba env create -f ENVNAME.yml```. 
        Replace 'ENVNAME.yml' with the name of the environment you want to install (axbu_dev_osx for OSx, 
        axbu_dev_win for Windows and axbu_dev_lin for Linux).
 
-**Note:** the OSx environment was built against M1 (Apple Silicon) platform and may not work on Intel-based Apple 
-devices.
+**Hint:** while only the platforms mentioned above were explicitly evaluated, this project is likely to work on any 
+common OS, but may require additional configurations steps.
 
+Since the release of [ataraxis-automation](https://github.com/Sun-Lab-NBB/ataraxis-automation) version 2.0.0 you can 
+also create the development environment from scratch via pyproject.toml dependencies. To do this, use 
+```tox -e create``` from project root directory.
 ___
+
+## Versioning
+
+We use [semantic versioning](https://semver.org/) for this project. For the versions available, see the 
+[tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities/tags).
+---
 
 ## Authors
 

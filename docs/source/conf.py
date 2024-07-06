@@ -6,15 +6,15 @@ project = 'ataraxis-base-utilities'
 # noinspection PyShadowingBuiltins
 copyright = '2024, Ivan Kondratyev & Sun Lab'
 author = 'Ivan Kondratyev'
-release = importlib_metadata.version("ataraxis-base-utilities")  # Extracts project version from the metadata .toml file.
+release = importlib_metadata.version("ataraxis-base-utilities")  # Extracts project version from the .toml file.
 
 # -- General configuration ---------------------------------------------------
 extensions = [
-    'sphinx.ext.autodoc',  # To build documentation from python source code docstrings.
-    'sphinx.ext.napoleon',  # To read google-style docstrings (works with autodoc module).
+    'sphinx.ext.autodoc',        # To build documentation from python source code docstrings.
+    'sphinx.ext.napoleon',       # To read google-style docstrings (works with autodoc module).
     'sphinx_autodoc_typehints',  # To parse typehints into documentation
-    'sphinx_rtd_theme',  # To format the documentation html using ReadTheDocs format.
-    'sphinx_click',  # To read docstrings and command-line arguments from click-wrapped python functions.
+    'sphinx_rtd_theme',          # To format the documentation html using ReadTheDocs format.
+    'sphinx_click',              # To read docstrings and command-line arguments from click-wrapped python functions.
 ]
 
 templates_path = ['_templates']

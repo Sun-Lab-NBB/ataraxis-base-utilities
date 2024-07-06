@@ -3,15 +3,15 @@
 import os
 import re
 import sys
+from typing import Any, Generator
+from pathlib import Path
 import tempfile
 import textwrap
-from pathlib import Path
-from typing import Any, Generator
 
 import pytest
 from pydantic import ValidationError
 
-from ataraxis_base_utilities import Console, LogBackends, LogLevel
+from ataraxis_base_utilities import Console, LogLevel, LogBackends
 
 
 @pytest.fixture
@@ -495,7 +495,7 @@ def test_console_error(backend, tmp_path, capsys):
 
     # Tests successful error raising and logging
     with pytest.raises(RuntimeError, match="Test error"):
-        console.error("Test error", RuntimeError, terminal=True, log=True)
+        console.error("Test error", RuntimeError, callback=None, terminal=True, log=True, reraise=True)
 
     captured = capsys.readouterr()
     assert "Test error" in captured.err
@@ -504,7 +504,7 @@ def test_console_error(backend, tmp_path, capsys):
         assert "Test error" in f.read()
 
     # Tests error without reraise
-    console.error("No reraise error", ValueError, terminal=True, log=True, reraise=False)
+    console.error(message="No reraise error", error=ValueError, callback=None, terminal=True, log=True, reraise=False)
     captured = capsys.readouterr()
     assert "No reraise error" in captured.err
     with open(tmp_path / "error.log", "r") as f:
@@ -515,7 +515,7 @@ def test_console_error(backend, tmp_path, capsys):
         pass
 
     with pytest.raises(CustomError):
-        console.error("Custom error", CustomError, terminal=True, log=True)
+        console.error(message="Custom error", error=CustomError, callback=None, terminal=True, log=True, reraise=True)
 
     # Capture and check the output
     captured = capsys.readouterr()
@@ -531,11 +531,17 @@ def test_console_error(backend, tmp_path, capsys):
             print("Callback executed", file=sys.stderr)
 
         # noinspection PyTypeChecker
-        console.error("Callback error", ValueError, callback=callback_func, terminal=True, log=True, reraise=False)
+        console.error(
+            "Callback error", error=ValueError, callback=callback_func, terminal=True, log=True, reraise=False
+        )
         captured = capsys.readouterr()
         assert "Callback error" in captured.err
         assert "Callback executed" in captured.err
         assert callback_called
+
+        # Also tests default callback performance (that it correctly aborts the runtime)
+        with pytest.raises(SystemExit):
+            console.error("Callback error", error=ValueError, terminal=False, log=False, reraise=False)
 
     # Checks that all errors were logged
     with open(tmp_path / "error.log", "r") as f:
@@ -556,7 +562,7 @@ def test_console_error_output_options(backend, tmp_path, capsys):
     console.add_handles(error_terminal=True, error_file=True)
 
     # Tests terminal only
-    console.error("Terminal only", RuntimeError, terminal=True, log=False, reraise=False)
+    console.error("Terminal only", RuntimeError, callback=None, terminal=True, log=False, reraise=False)
     captured = capsys.readouterr()
     assert "Terminal only" in captured.err
 
@@ -567,14 +573,14 @@ def test_console_error_output_options(backend, tmp_path, capsys):
         assert not os.path.exists(error_log)
 
     # Tests log only
-    console.error("Log only", RuntimeError, terminal=False, log=True, reraise=False)
+    console.error("Log only", RuntimeError, callback=None, terminal=False, log=True, reraise=False)
     captured = capsys.readouterr()
     assert captured.err == ""
     with open(tmp_path / "error.log", "r") as f:
         assert "Log only" in f.read()
 
     # Tests neither terminal nor log
-    console.error("Neither", RuntimeError, terminal=False, log=False, reraise=False)
+    console.error("Neither", RuntimeError, callback=None, terminal=False, log=False, reraise=False)
     captured = capsys.readouterr()
     assert captured.err == ""
     with open(tmp_path / "error.log", "r") as f:
@@ -620,3 +626,35 @@ def test_console_error_handling(backend, tmp_path):
         )
         with pytest.raises(RuntimeError, match=error_format(message)):
             console.error("No handles error", RuntimeError)
+
+
+def test_ensure_directory_exists() -> None:
+    """Verifies that _ensure_directory_exists() method of Console class functions as expected"""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Test with a directory path
+        dir_path = Path(temp_dir) / "test_dir"
+        Console._ensure_directory_exists(dir_path)
+        assert dir_path.exists() and dir_path.is_dir()
+
+        # Test with a file path
+        file_path = Path(temp_dir) / "nested" / "dir" / "test_file.txt"
+        Console._ensure_directory_exists(file_path)
+        assert file_path.parent.exists() and file_path.parent.is_dir()
+        assert not file_path.exists()  # The file itself should not be created
+
+        # Test with an existing directory
+        existing_dir = Path(temp_dir) / "existing_dir"
+        existing_dir.mkdir()
+        Console._ensure_directory_exists(existing_dir)
+        assert existing_dir.exists() and existing_dir.is_dir()
+
+        # Test with a path that includes a file in an existing directory
+        existing_file_path = Path(temp_dir) / "test_file2.txt"
+        Console._ensure_directory_exists(existing_file_path)
+        assert existing_file_path.parent.exists() and existing_file_path.parent.is_dir()
+        assert not existing_file_path.exists()  # The file itself should not be created
+
+        # Test with a deeply nested path
+        deep_path = Path(temp_dir) / "very" / "deep" / "nested" / "directory" / "structure"
+        Console._ensure_directory_exists(deep_path)
+        assert deep_path.exists() and deep_path.is_dir()

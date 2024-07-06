@@ -279,6 +279,7 @@ also create the development environment from scratch via pyproject.toml dependen
 ```tox -e create``` from project root directory.
 
 ### Automation Troubleshooting
+
 Many packages used in 'tox' automation pipelines (uv, mypy, ruff) and 'tox' itself are prone to various failures. In 
 most cases, this is related to their caching behavior. Despite a considerable effort to disable caching behavior known 
 to be problematic, in some cases it cannot or should not be eliminated. If you run into an unintelligible error with 

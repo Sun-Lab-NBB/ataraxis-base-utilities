@@ -1,9 +1,7 @@
 from _typeshed import Incomplete
 from collections.abc import Callable as Callable
 from enum import Enum
-from functools import wraps as wraps
 from loguru._logger import Logger as Logger
-from os import PathLike as PathLike
 from pathlib import Path
 from typing import Any, Literal
 
@@ -106,7 +104,7 @@ class Console:
             also be configured to not remove existing handles (default behavior) if necessary. See argument docstrings
             below for more information.
 
-            During runtime, handles determine what happens to the message passed via appropriate 'log' call. Loguru
+            During runtime, handles determine what happens to the message passed via the appropriate 'log' call. Loguru
             shares the set of handles across all 'logger' instances, which means this method should be used with
             caution, as it can interfere with any other handles, including the default ones.
 
@@ -141,7 +139,7 @@ class Console:
     def _ensure_directory_exists(path: Path) -> None:
         """Determines if the directory portion of the input path exists and, if not, creates it.
 
-        When the input path ends with an .extension (indicating this a file path), the file portion is ignored and
+        When the input path ends with an .extension (indicating a file path), the file portion is ignored and
         only the directory path is evaluated.
 
         Args:
@@ -151,7 +149,7 @@ class Console:
         """Formats the input message string according to the standards used across Ataraxis and related projects.
 
         Args:
-            message: The text string to format to display according to Ataraxis standards.
+            message: The text string to format according to Ataraxis standards.
             loguru: A flag that determines if the message is intended to be processed via loguru backend or
                 another method or backend (e.g.: Exception class or click backend).
 
@@ -164,7 +162,7 @@ class Console:
     def echo(self, message: str, level: LogLevel = ..., *, terminal: bool = True, log: bool = True) -> bool:
         """Formats the input message according to the class configuration and outputs it to the terminal, file or both.
 
-        In a way, this can be seen as a better 'print'. It does a lot more than just print though, especially when the
+        In a way, this can be seen as a better 'print'. It does a lot more than 'print' though, especially when the
         Console class uses loguru backend.
 
         Args:
@@ -200,7 +198,7 @@ class Console:
             error: The callable Exception class to be raised by the method.
             callback: Optional, only for loguru logging backends. The function to call after catching the exception.
                 This can be used to terminate or otherwise alter the runtime without relying on the standard python
-                mechanism of retracing the call stack. For example, sys.exit can be passed as a callable to
+                mechanism of retracing the call stack. For example, sys.exit can be passed as a callback to
                 terminate early.
             terminal: The flag that determines whether the error should be printed to the terminal using the class
                 logging backend.

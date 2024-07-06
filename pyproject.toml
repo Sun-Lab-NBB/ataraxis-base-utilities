@@ -169,7 +169,7 @@ indent-style = "space"             # Uses space for indents
 skip-magic-trailing-comma = false  # Like black, ignores trailing commas
 line-ending = "auto"               # Automatically detects and standardizes line ending chracter
 
-# Docstrings and comments line length
+# Docstrings and comments' line length
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 120  # Maximum documentation line length, the same as code
 

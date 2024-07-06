@@ -4,7 +4,7 @@ Python library that provides a minimalistic set of shared utility functions used
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-base-utilities)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-base-utilities)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](ht1tps://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 ![type-checked: mypy](https://img.shields.io/badge/type--checked-mypy-blue?style=flat-square&logo=python)
 ![PyPI - License](https://img.shields.io/pypi/l/ataraxis-base-utilities)
@@ -17,12 +17,12 @@ ___
 This library is one of the two 'base' dependency libraries used by every other Sun Lab project (the other being 
 [ataraxis-automation](https://github.com/Sun-Lab-NBB/ataraxis-automation)). It aggregates common utility functions 
 that are expected to be shared and reused by many other lab projects, such as message and error logging. This library is
-designed to avoid re-implementing the same set of utility features for every lab projects. This is important, since most
+designed to avoid re-implementing the same set of utility features for every lab project. This is important, since most
 of our codebases employ a highly modular and decentralized design with many independent subprojects dynamically 
-assembled into functional pipelines. Generally, any class or function that is copied with minor modifications into five 
+assembled into functional pipelines. Generally, any class or function copied with minor modifications into five 
 or more Sun Lab projects is a good candidate for inclusion into this library.
 
-Despite a strong focus on supporting Sun Lab projects, this library can be used in non-lab project with minor 
+Despite a strong focus on supporting Sun Lab projects, this library can be used in non-lab projects with minor 
 refactoring. Specifically, anyone willing to reuse this library in their project may need to adjust the default values
 and configurations used throughout this library to match their specific needs. Otherwise, it should be readily 
 integrable with any other project due to its minimalistic design (both in terms of features and dependencies).
@@ -182,12 +182,12 @@ do not call add_handles() or enable() methods. The only exception to this rule i
 (cli, benchmark, script) that is known to be the highest hierarchy (nothing else imports your code, it imports 
 everything else).
 
-To facilitate correct usage, the library exposes 'console' variable that is preconfigured to use Loguru backend and is 
+To facilitate correct usage, the library exposes 'console' variable preconfigured to use Loguru backend and is 
 not enabled by default. You can use this variable to add Console-backed printing and logging functionality to your 
 library. Whenever your library is imported, the end-user can then enable() and add_handles() using the same 'console'
 variable, which will automatically work for all console-based statements across all libraries. This way, the exact 
-configuration (what they want to see) is left up to end-user, but your code will still raise errors and can be debugged
-using custom logging configurations.
+configuration is left up to end-user, but your code will still raise errors and can be debugged using custom 
+logging configurations.
 ___
 
 ## API Documentation

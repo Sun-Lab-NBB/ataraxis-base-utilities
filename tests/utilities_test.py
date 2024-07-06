@@ -26,7 +26,7 @@ def error_format(message: str) -> str:
     """Formats the input message to match the default Console format and escapes it using re, so that it can be used to
     verify raised exceptions.
 
-    This method is used to setup pytest 'match' clauses to verify raised exceptions.
+    This method is used to set up pytest 'match' clauses to verify raised exceptions.
     """
     return re.escape(textwrap.fill(message, width=120, break_long_words=False, break_on_hyphens=False))
 
@@ -50,7 +50,7 @@ def test_console_initialization(backend, temp_dir) -> None:
 def test_console_invalid_initialization_argument_type(backend, temp_dir) -> None:
     """Tests that pydantic wrapper successfully catches and handles invalid initialization argument types.
 
-    Also verifies that pydantic attempts to convert valid equivalents to correct type, eg: int 1 -> bool True.
+    Also verifies that pydantic attempts to convert valid equivalents to the correct type, eg: int 1 -> bool True.
     """
     with pytest.raises(ValidationError):
         # noinspection PyTypeChecker
@@ -87,7 +87,7 @@ def test_console_invalid_initialization_line_width(backend) -> None:
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_invalid_initialization_log_paths(backend, temp_dir) -> None:
     """Tests invalid path inputs during Console initialization."""
-    valid_extensions: set[str] = {".txt", ".log", ".json"}
+    valid_extensions: tuple[str, str, str] = (".txt", ".log", ".json")
 
     # Uses a non-supported 'zipp' extension to trigger ValueErrors.
     message = (
@@ -183,7 +183,7 @@ def test_console_add_handles(backend, tmp_path, capsys) -> None:
         console.add_handles()
         assert len(console._logger._core.handlers) if console._logger else 0 == initial_handlers
 
-    # Tests has_handles property. Should be 0 for both backends, as loguru tests involves removing all handles and
+    # Tests has_handles property. Should be 0 for both backends, as loguru tests involve removing all handles and
     # click backend does not instantiate handles in the first place.
     assert not console.has_handles
 
@@ -271,7 +271,7 @@ def test_console_format_message(backend) -> None:
     # Checks first line (should be 83 characters or fewer due to 37-character loguru header)
     assert len(lines[0]) <= 83  # 120 - 37 = 83
 
-    # Checks subsequent lines (should be 120 characters or fewer, with at least 37 characters of indentation)
+    # Checks the following lines (should be 120 characters or fewer, with at least 37 characters of indentation)
     for line in lines[1:]:
         assert len(line) <= 120
         assert line.startswith(" " * 37)

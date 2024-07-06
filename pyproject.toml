@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 # Project metdata section. Provides the genral ID information about the project.
 [project]
 name = "ataraxis-base-utilities"
-version = "1.0.1"
+version = "1.0.2"
 description = "Provides a minimalistic set of shared utility functions used to support most other Sun Lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -169,7 +169,7 @@ indent-style = "space"             # Uses space for indents
 skip-magic-trailing-comma = false  # Like black, ignores trailing commas
 line-ending = "auto"               # Automatically detects and standardizes line ending chracter
 
-# Docstrings and comments line length
+# Docstrings and comments' line length
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 120  # Maximum documentation line length, the same as code
 

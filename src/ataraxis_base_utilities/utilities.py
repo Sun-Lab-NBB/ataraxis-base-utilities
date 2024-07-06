@@ -6,16 +6,12 @@ expanded to include other widely used utility functions. The classes and functio
 specialized for Sub Lab standards, but they can be adopted after light reconfiguration to work for external projects.
 """
 
-import os
-from os import PathLike
 import sys
 from enum import Enum
 from types import NoneType
 from typing import Any, Literal, Optional
 from pathlib import Path
 import textwrap
-from functools import wraps
-import traceback
 from collections.abc import Callable
 
 import click
@@ -163,7 +159,8 @@ class Console:
         self._use_color: bool = use_color
 
         # Verifies that the input paths to log files, if any, use valid file extensions and are otherwise well-formed.
-        valid_extensions: set[str] = {".txt", ".log", ".json"}  # Stores currently supported log file extensions
+        # Stores currently supported log file extensions
+        valid_extensions: tuple[str, str, str] = (".txt", ".log", ".json")
         if not isinstance(debug_log_path, NoneType):
             debug_log_path = Path(debug_log_path)
             if debug_log_path.suffix not in valid_extensions:
@@ -258,7 +255,7 @@ class Console:
             also be configured to not remove existing handles (default behavior) if necessary. See argument docstrings
             below for more information.
 
-            During runtime, handles determine what happens to the message passed via appropriate 'log' call. Loguru
+            During runtime, handles determine what happens to the message passed via the appropriate 'log' call. Loguru
             shares the set of handles across all 'logger' instances, which means this method should be used with
             caution, as it can interfere with any other handles, including the default ones.
 
@@ -310,6 +307,7 @@ class Console:
         # generating the message. Also uses 'ataraxis_shell' extra tag to determine if any message should be processed
         # or not.
         if debug_terminal:
+            # noinspection LongLine
             self._logger.add(
                 sys.stdout,
                 format="<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | <level>{level: <8}</level> | <level>{message}</level>",
@@ -324,6 +322,7 @@ class Console:
         # Message terminal-printing handle. Functions as a prettier, time-stamped print. Does not include any additional
         # information and only prints messages with level above DEBUG and up to WARNING (inclusive).
         if message_terminal:
+            # noinspection LongLine
             self._logger.add(
                 sys.stdout,
                 format="<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | <level>{level: <8}</level> | <level>{message}</level>",
@@ -336,10 +335,11 @@ class Console:
             )
 
         # Error terminal-printing-handle. Does not include additional diagnostic information, but includes the whole
-        # backtrace of the error message. It works very similar to default python error traces, but without mandatory
+        # backtrace of the error message. It works similarly to default python error traces, but without mandatory
         # runtime termination. Works for ERROR and above level messages. Unlike other two handles, writes to
         # stderr, rather than stdout.
         if error_terminal:
+            # noinspection LongLine
             self._logger.add(
                 sys.stderr,
                 format="<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | <level>{level: <8}</level> | <level>{message}</level>",
@@ -420,13 +420,13 @@ class Console:
     def _ensure_directory_exists(path: Path) -> None:
         """Determines if the directory portion of the input path exists and, if not, creates it.
 
-        When the input path ends with an .extension (indicating this a file path), the file portion is ignored and
+        When the input path ends with an .extension (indicating a file path), the file portion is ignored and
         only the directory path is evaluated.
 
         Args:
             path: The Path to be processed.
         """
-        # If path is a file (because it has a suffix), ensures the parent directory of the file, if any, exists.
+        # If the path is a file (because it has a suffix), ensures the parent directory of the file, if any, exists.
         if path.suffix != "":
             path.parent.mkdir(parents=True, exist_ok=True)
         else:
@@ -438,7 +438,7 @@ class Console:
         """Formats the input message string according to the standards used across Ataraxis and related projects.
 
         Args:
-            message: The text string to format to display according to Ataraxis standards.
+            message: The text string to format according to Ataraxis standards.
             loguru: A flag that determines if the message is intended to be processed via loguru backend or
                 another method or backend (e.g.: Exception class or click backend).
 
@@ -497,7 +497,7 @@ class Console:
     def echo(self, message: str, level: LogLevel = LogLevel.INFO, *, terminal: bool = True, log: bool = True) -> bool:
         """Formats the input message according to the class configuration and outputs it to the terminal, file or both.
 
-        In a way, this can be seen as a better 'print'. It does a lot more than just print though, especially when the
+        In a way, this can be seen as a better 'print'. It does a lot more than 'print' though, especially when the
         Console class uses loguru backend.
 
         Args:
@@ -513,7 +513,7 @@ class Console:
 
         Returns:
             True if the message has been processed and False if the message cannot be printed because the Console is
-                disabled.
+            disabled.
 
         Raises:
             ValidationError: If any of the input arguments are not of a valid type.
@@ -550,8 +550,8 @@ class Console:
             # Mostly here to prevent mypy being annoying, as the error is not really possible
             if isinstance(self._logger, NoneType):
                 message = (
-                    "Unable to bind the logger to use the required extra variables. Generally, this error should not be "
-                    "possible"
+                    "Unable to bind the logger to use the required extra variables. Generally, this error should "
+                    "not be possible."
                 )
                 raise RuntimeError(
                     textwrap.fill(
@@ -589,7 +589,7 @@ class Console:
                 else:
                     click.echo(message=formatted_message, err=True, color=self._use_color)
 
-            # For files, it is a bit more nuanced, as click respects differnt log file paths.
+            # For files, it is a bit more nuanced, as click respects different log file paths.
             if log:
                 if level == LogLevel.DEBUG and self._debug_log_path:
                     with open(file=str(self._debug_log_path), mode="a") as file:
@@ -629,7 +629,7 @@ class Console:
             error: The callable Exception class to be raised by the method.
             callback: Optional, only for loguru logging backends. The function to call after catching the exception.
                 This can be used to terminate or otherwise alter the runtime without relying on the standard python
-                mechanism of retracing the call stack. For example, sys.exit can be passed as a callable to
+                mechanism of retracing the call stack. For example, sys.exit can be passed as a callback to
                 terminate early.
             terminal: The flag that determines whether the error should be printed to the terminal using the class
                 logging backend.
@@ -675,8 +675,8 @@ class Console:
             # Mostly here to prevent mypy being annoying, as the error is not really possible
             if isinstance(self._logger, NoneType):
                 message = (
-                    "Unable to bind the logger to use the required extra variables. Generally, this error should not be "
-                    "possible"
+                    "Unable to bind the logger to use the required extra variables. Generally, this error should not "
+                    "be possible."
                 )
                 raise RuntimeError(
                     textwrap.fill(

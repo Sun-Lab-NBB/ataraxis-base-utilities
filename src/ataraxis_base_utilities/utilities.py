@@ -408,7 +408,7 @@ class Console:
 
     @validate_call()
     def set_debug_log_path(self, path: Path) -> None:
-        """This method sets the path to the log file used to save messages at or below DEBUG level.
+        """Sets the path to the log file used to save messages at or below DEBUG level.
 
         Notes:
             Remember to call add_handles() method to reconfigure the handles after providing the new path.
@@ -444,7 +444,7 @@ class Console:
 
     @validate_call()
     def set_message_log_path(self, path: Path) -> None:
-        """This method sets the path to the log file used to save messages between INFO and WARNING levels.
+        """Sets the path to the log file used to save messages between INFO and WARNING levels.
 
         Notes:
             Remember to call add_handles() method to reconfigure the handles after providing the new path.
@@ -479,7 +479,7 @@ class Console:
 
     @validate_call()
     def set_error_log_path(self, path: Path) -> None:
-        """This method sets the path to the log file used to save messages at or above ERROR level.
+        """Sets the path to the log file used to save messages at or above ERROR level.
 
         Notes:
             Remember to call add_handles() method to reconfigure the handles after providing the new path.

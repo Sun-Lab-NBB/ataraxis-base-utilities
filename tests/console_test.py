@@ -1,4 +1,4 @@
-"""This module stores the tests for all classes and functions available from the utilities.py module."""
+"""This module stores the tests for all classes and functions available from the console.py module."""
 
 import os
 import re
@@ -11,7 +11,7 @@ import textwrap
 import pytest
 from pydantic import ValidationError
 
-from ataraxis_base_utilities import Console, LogLevel, LogBackends
+from ataraxis_base_utilities import Console, LogLevel, LogBackends, LogExtensions
 
 
 @pytest.fixture
@@ -36,14 +36,14 @@ def test_console_initialization(backend, temp_dir) -> None:
     """Tests successful console initialization."""
     console = Console(
         logger_backend=backend,
-        message_log_path=temp_dir / "message.log",
-        error_log_path=temp_dir / "error.log",
-        debug_log_path=temp_dir / "debug.log",
+        message_log_path=temp_dir / f"message{LogExtensions.LOG}",
+        error_log_path=temp_dir / f"error{LogExtensions.TXT}",
+        debug_log_path=temp_dir / f"debug{LogExtensions.JSON}",
     )
     assert console._backend == backend
     assert console._message_log_path == temp_dir / "message.log"
-    assert console._error_log_path == temp_dir / "error.log"
-    assert console._debug_log_path == temp_dir / "debug.log"
+    assert console._error_log_path == temp_dir / "error.txt"
+    assert console._debug_log_path == temp_dir / "debug.json"
 
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
@@ -87,7 +87,7 @@ def test_console_invalid_initialization_line_width(backend) -> None:
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_invalid_initialization_log_paths(backend, temp_dir) -> None:
     """Tests invalid path inputs during Console initialization."""
-    valid_extensions: tuple[str, str, str] = (".txt", ".log", ".json")
+    valid_extensions: tuple[str, ...] = LogExtensions.values()
 
     # Uses a non-supported 'zipp' extension to trigger ValueErrors.
     message = (
@@ -204,13 +204,11 @@ def test_console_add_handles(backend, tmp_path, capsys) -> None:
     console.echo("Test error", LogLevel.ERROR, terminal=True, log=True)
 
     captured = capsys.readouterr()
-    if backend == LogBackends.LOGURU:
-        assert "Test debug" in captured.out
-        assert "Test message" in captured.out
-        assert "Test error" in captured.err
-    elif backend == LogBackends.CLICK:
-        assert "Test message" in captured.out
-        assert "Test error" in captured.err
+
+    # Checks terminal for both backends
+    assert "Test debug" in captured.out
+    assert "Test message" in captured.out
+    assert "Test error" in captured.err
 
     # Checks log files for both backends
     assert "Test debug" in debug_log.read_text()
@@ -671,7 +669,7 @@ def console() -> Console:
 
 def test_debug_log_path(console, tmp_path):
     """Verifies the functionality of debug_log_path getter and setter methods."""
-    # Tests getter when path is not set
+    # Tests getter when the path is not set
     assert console.get_debug_log_path is None
 
     # Tests setter and getter
@@ -682,7 +680,7 @@ def test_debug_log_path(console, tmp_path):
 
 def test_message_log_path(console, tmp_path):
     """Verifies the functionality of message_log_path getter and setter methods."""
-    # Tests getter when path is not set
+    # Tests getter when the path is not set
     assert console.get_message_log_path is None
 
     # Tests setter and getter
@@ -693,7 +691,7 @@ def test_message_log_path(console, tmp_path):
 
 def test_error_log_path(console, tmp_path):
     """Verifies the functionality of error_log_path getter and setter methods."""
-    # Tests getter when path is not set
+    # Tests getter when the path is not set
     assert console.get_error_log_path is None
 
     # Tests setter and getter

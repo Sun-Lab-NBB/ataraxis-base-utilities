@@ -89,10 +89,11 @@ documentation if loguru backend is not appropriate for your specific use case.
 
 This is a minimal example of how to use the class, assuming you want to use default parameters:
 ```
-# Import 'console'
-from ataraxis_base_utilities import console, LogLevel
+# Import 'console' and helper classes
+from ataraxis_base_utilities import console, LogLevel, LogExtensions
+from pathlib import Path
 
-# 'console' is a global variable that functions similar to Loguru 'logger'. It is ready to be used right after import
+# 'console' is a global variable that functions similar to Loguru 'logger'. It is ready to be used right after import.
 
 # When imported, console is DISABLED. It will not print anything and will raise errors just like python does.
 
@@ -113,6 +114,18 @@ console.error('Error message')
 
 # This shows how you can chose what error is raised.
 console.error('Error message', error=ValueError)
+
+# By default, console variable is not configured to save messages and errors to log files. To add log file support, 
+# follow these steps:
+
+# First, provide it with valid log file path:
+extension = LogExtensions.LOG
+message_log = Path(f"my_log{extension}")
+console.set_message_log_path(message_log)
+
+# Then reconfigure the console to allow logging messages. Any subsequent console echo() call will both print the 
+# message to the terminal and log it to the log file.
+console.add_handles(message_file=True)
 ```
 
 This is a more detailed example that also showcases some of the configuration parameters used by Console methods and 

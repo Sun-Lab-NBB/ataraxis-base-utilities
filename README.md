@@ -221,7 +221,7 @@ that were used during development from the included .yml files.
 2. ```cd``` to the root directory of the project using your CLI of choice.
 3. Install development dependencies. You have multiple options of satisfying this requirement:
     1. **_Preferred Method:_** Use conda or pip to install
-       [tox](https://tox.wiki/en/latest/config.html#provision_tox_env) or use an environment that has it installed and
+       [tox](https://tox.wiki/en/latest/user_guide.html) or use an environment that has it installed and
        call ```tox -e import``` to automatically import the os-specific development environment included with the
        source code in your local conda distribution. Alternatively, you can use ```tox -e create``` to create the 
        environment from scratch and automatically install the necessary dependencies using pyproject.toml file. See 
@@ -229,7 +229,7 @@ that were used during development from the included .yml files.
     2. Run ```python -m pip install .'[dev]'``` command to install development dependencies and the library using 
        pip. On some systems, you may need to use a slightly modified version of this command: 
        ```python -m pip install .[dev]```.
-    3. As long as you have an environment with [tox](https://tox.wiki/en/latest/config.html#provision_tox_env) installed
+    3. As long as you have an environment with [tox](https://tox.wiki/en/latest/user_guide.html) installed
        and do not intend to run any code outside the predefined project automation pipelines, tox will automatically
        install all required dependencies for each task.
 
@@ -251,15 +251,9 @@ In addition to installing the required python packages, separately install the f
 ### Development Automation
 
 This project comes with a fully configured set of automation pipelines implemented using 
-[tox](https://tox.wiki/en/latest/config.html#provision_tox_env). Check [tox.ini file](tox.ini) for details about 
+[tox](https://tox.wiki/en/latest/user_guide.html). Check [tox.ini file](tox.ini) for details about 
 available pipelines and their implementation. Alternatively, call ```tox list``` from the root directory of the project
 to see the list of available tasks.
-
-Also, it may be beneficial to check the documentation for the 
-[ataraxis-automation](https://github.com/Sun-Lab-NBB/ataraxis-automation) library. This library provides low-level 
-scripts used by different 'tox' tasks. Importantly, all conda environment manipulations are realized through scripts 
-offered by our automation library. The documentation for the library includes additional information on all available 
-'tox' tasks and general notes on writing custom tox.ini files to work with our automation scripts.
 
 **Note!** All commits to this project have to successfully complete the ```tox``` task before being pushed to GitHub. 
 To minimize the runtime task for this task, use ```tox --parallel```.
@@ -278,7 +272,7 @@ To install the development environment for your OS:
 1. Download this repository to your local machine using your preferred method, such as git-cloning.
 2. ```cd``` into the [envs](envs) folder.
 3. Use one of the installation methods below:
-    1. **_Preferred Method_**: Install [tox](https://tox.wiki/en/latest/config.html#provision_tox_env) or use another
+    1. **_Preferred Method_**: Install [tox](https://tox.wiki/en/latest/user_guide.html) or use another
        environment with already installed tox and call ```tox -e import```.
     2. **_Alternative Method_**: Run ```conda env create -f ENVNAME.yml``` or ```mamba env create -f ENVNAME.yml```. 
        Replace 'ENVNAME.yml' with the name of the environment you want to install (axbu_dev_osx for OSx, 
@@ -304,6 +298,7 @@ ___
 
 We use [semantic versioning](https://semver.org/) for this project. For the versions available, see the 
 [tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities/tags).
+
 ---
 
 ## Authors
@@ -320,3 +315,5 @@ ___
 
 - All Sun Lab [members](https://neuroai.github.io/sunlab/people) for providing the inspiration and comments during the
   development of this library.
+
+---

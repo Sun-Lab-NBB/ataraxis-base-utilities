@@ -304,6 +304,7 @@ ___
 
 We use [semantic versioning](https://semver.org/) for this project. For the versions available, see the 
 [tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities/tags).
+
 ---
 
 ## Authors
@@ -320,3 +321,5 @@ ___
 
 - All Sun Lab [members](https://neuroai.github.io/sunlab/people) for providing the inspiration and comments during the
   development of this library.
+
+---

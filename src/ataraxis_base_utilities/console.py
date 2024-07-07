@@ -291,6 +291,12 @@ class Console:
             self._logger = None
         self._is_enabled: bool = False
 
+    def __repr__(self) -> str:
+        return (
+            f"Console(backend={self._backend}, has_handles={self.has_handles}, enabled={self.is_enabled}, "
+            f"line_width={self._line_width})"
+        )
+
     @validate_call()
     def add_handles(
         self,
@@ -858,12 +864,8 @@ class Console:
         # Formats the error message. This does nt account for and is not intended to be parsed with loguru.
         formatted_message: str = self.format_message(message, loguru=False)
 
-        # If the class is disabled, uses regular python 'raise exception' functionality.
-        if not self.is_enabled:
-            raise error(formatted_message)
-
         # If the backend is loguru, raises and catches the exception with loguru
-        if self._backend == LogBackends.LOGURU and not isinstance(self._logger, NoneType):
+        if self._backend == LogBackends.LOGURU and not isinstance(self._logger, NoneType) and self.is_enabled:
             if not self.has_handles:
                 message = (
                     f"Unable to properly log the requested error ({error}) with message {message}. The Console class "
@@ -903,7 +905,7 @@ class Console:
 
         # If the backend is click, prints the message to the requested destinations (file, terminal or both) and
         # optionally raises the error if re-raising is requested.
-        elif self._backend == LogBackends.CLICK:
+        elif self._backend == LogBackends.CLICK and self.is_enabled:
             if log:
                 with open(file=str(self._error_log_path), mode="a") as file:
                     click.echo(file=file, message=formatted_message, color=False)
@@ -911,3 +913,11 @@ class Console:
                 click.echo(message=formatted_message, err=True, color=self._use_color)
             if reraise:
                 raise error(formatted_message)
+
+        # If all other conditions are not met, raises the error using the standard Python 'raise' mechanism
+        else:
+            raise error(formatted_message)
+
+
+x = Console()
+print(x)

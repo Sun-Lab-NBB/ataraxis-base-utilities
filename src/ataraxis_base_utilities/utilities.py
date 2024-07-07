@@ -1,9 +1,7 @@
-"""This module contains utility classes and functions used by most other project Ataraxis and Sun Lab libraries.
+"""This module contains shared utility classes and functions used to support other projects.
 
-This library is used to provide common low-level functionality that should be unified and widely available to many
-libraries. For example, this includes Logging and Terminal Messaging (Console class) and, in near future, will be
-expanded to include other widely used utility functions. The classes and functions from this module are generally
-specialized for Sub Lab standards, but they can be adopted after light reconfiguration to work for external projects.
+The classes and functions from this module are specialized for Sub Lab standards, but they can be adopted after
+light reconfiguration to work for external projects.
 """
 
 import sys
@@ -117,6 +115,7 @@ class Console:
         _break_long_words: Determines whether to break text on long words.
         _break_on_hyphens: Determines whether to break text on hyphens.
         _use_color: Determines whether to colorize terminal output.
+        _valid_extensions: Stores valid log-file extensions. This is used to verify input log file paths.
         _message_log_path: Stores the path to the message log file.
         _error_log_path: Stores the path to the error log file.
         _debug_log_path: Stores the path to the debug log file.
@@ -158,16 +157,17 @@ class Console:
         self._break_on_hyphens: bool = break_on_hyphens
         self._use_color: bool = use_color
 
+        self._valid_extensions: tuple[str, str, str] = (".txt", ".log", ".json")
+
         # Verifies that the input paths to log files, if any, use valid file extensions and are otherwise well-formed.
         # Stores currently supported log file extensions
-        valid_extensions: tuple[str, str, str] = (".txt", ".log", ".json")
         if not isinstance(debug_log_path, NoneType):
             debug_log_path = Path(debug_log_path)
-            if debug_log_path.suffix not in valid_extensions:
+            if debug_log_path.suffix not in self._valid_extensions:
                 message = (
                     f"Invalid 'debug_log_path' argument encountered when instantiating Console class instance. "
                     f"Expected a path ending in a file name with one of the supported extensions:"
-                    f"{', '.join(valid_extensions)}, but encountered {debug_log_path}."
+                    f"{', '.join(self._valid_extensions)}, but encountered {debug_log_path}."
                 )
                 raise ValueError(
                     textwrap.fill(
@@ -177,16 +177,16 @@ class Console:
                         break_long_words=self._break_long_words,
                     )
                 )
-            else:
-                # If the path is valid, verifies the directory portion of the path exists and, if not, creates it.
-                self._ensure_directory_exists(debug_log_path)
+            # If the path is valid, verifies the directory portion of the path exists and, if not, creates it.
+            self._ensure_directory_exists(debug_log_path)
+
         if not isinstance(message_log_path, NoneType):
             message_log_path = Path(message_log_path)
-            if message_log_path.suffix not in valid_extensions:
+            if message_log_path.suffix not in self._valid_extensions:
                 message = (
                     f"Invalid 'message_log_path' argument encountered when instantiating Console class instance. "
                     f"Expected a path ending in a file name with one of the supported extensions:"
-                    f"{', '.join(valid_extensions)}, but encountered {message_log_path}."
+                    f"{', '.join(self._valid_extensions)}, but encountered {message_log_path}."
                 )
                 raise ValueError(
                     textwrap.fill(
@@ -196,15 +196,15 @@ class Console:
                         break_long_words=self._break_long_words,
                     )
                 )
-            else:
-                self._ensure_directory_exists(message_log_path)
+            self._ensure_directory_exists(message_log_path)
+
         if not isinstance(error_log_path, NoneType):
             error_log_path = Path(error_log_path)
-            if error_log_path.suffix not in valid_extensions:
+            if error_log_path.suffix not in self._valid_extensions:
                 message = (
                     f"Invalid 'error_log_path' argument encountered when instantiating Console class instance. "
                     f"Expected a path ending in a file name with one of the supported extensions:"
-                    f"{', '.join(valid_extensions)}, but encountered {error_log_path}."
+                    f"{', '.join(self._valid_extensions)}, but encountered {error_log_path}."
                 )
                 raise ValueError(
                     textwrap.fill(
@@ -214,8 +214,8 @@ class Console:
                         break_long_words=self._break_long_words,
                     )
                 )
-            else:
-                self._ensure_directory_exists(error_log_path)
+
+            self._ensure_directory_exists(error_log_path)
 
         self._debug_log_path: Optional[Path] = debug_log_path
         self._message_log_path: Optional[Path] = message_log_path
@@ -399,6 +399,112 @@ class Console:
     def disable(self) -> None:
         """A switch that disables logging messages and errors with this Console class."""
         self._is_enabled = False
+
+    @property
+    def get_debug_log_path(self) -> Path | None:
+        """Returns the path to the log file used to save messages at or below DEBUG level or None if the path was not
+        set."""
+        return self._debug_log_path
+
+    @validate_call()
+    def set_debug_log_path(self, path: Path) -> None:
+        """This method sets the path to the log file used to save messages at or below DEBUG level.
+
+        Notes:
+            Remember to call add_handles() method to reconfigure the handles after providing the new path.
+
+        Raises:
+            ValueError: If the provided path does not end with one of the supported file-extensions.
+        """
+        # Verifies tha the path points ot a valid file
+        if path.suffix not in self._valid_extensions:
+            message = (
+                f"Invalid 'path' argument encountered when setting Console debug_log_path. "
+                f"Expected a path ending in a file name with one of the supported extensions:"
+                f"{', '.join(self._valid_extensions)}, but encountered {path}."
+            )
+            raise ValueError(
+                textwrap.fill(
+                    text=message,
+                    width=self._line_width,
+                    break_on_hyphens=self._break_on_hyphens,
+                    break_long_words=self._break_long_words,
+                )
+            )
+
+        # Ensures that the directory included in the path exists and overwrites the local debug log path
+        self._ensure_directory_exists(path)
+        self._debug_log_path = path
+
+    @property
+    def get_message_log_path(self) -> Path | None:
+        """Returns the path to the log file used to save messages between INFO and WARNING levels or None if the path
+        was not set."""
+        return self._message_log_path
+
+    @validate_call()
+    def set_message_log_path(self, path: Path) -> None:
+        """This method sets the path to the log file used to save messages between INFO and WARNING levels.
+
+        Notes:
+            Remember to call add_handles() method to reconfigure the handles after providing the new path.
+
+        Raises:
+            ValueError: If the provided path does not end with one of the supported file-extensions.
+        """
+        if path.suffix not in self._valid_extensions:
+            message = (
+                f"Invalid 'path' argument encountered when setting Console message_log_path. "
+                f"Expected a path ending in a file name with one of the supported extensions:"
+                f"{', '.join(self._valid_extensions)}, but encountered {path}."
+            )
+            raise ValueError(
+                textwrap.fill(
+                    text=message,
+                    width=self._line_width,
+                    break_on_hyphens=self._break_on_hyphens,
+                    break_long_words=self._break_long_words,
+                )
+            )
+
+        # Ensures that the directory included in the path exists and overwrites the local message log path
+        self._ensure_directory_exists(path)
+        self._message_log_path = path
+
+    @property
+    def get_error_log_path(self) -> Path | None:
+        """Returns the path to the log file used to save messages at or above ERROR level or None if the path was not
+        set."""
+        return self._error_log_path
+
+    @validate_call()
+    def set_error_log_path(self, path: Path) -> None:
+        """This method sets the path to the log file used to save messages at or above ERROR level.
+
+        Notes:
+            Remember to call add_handles() method to reconfigure the handles after providing the new path.
+
+        Raises:
+            ValueError: If the provided path does not end with one of the supported file-extensions.
+        """
+        if path.suffix not in self._valid_extensions:
+            message = (
+                f"Invalid 'path' argument encountered when setting Console error_log_path. "
+                f"Expected a path ending in a file name with one of the supported extensions:"
+                f"{', '.join(self._valid_extensions)}, but encountered {path}."
+            )
+            raise ValueError(
+                textwrap.fill(
+                    text=message,
+                    width=self._line_width,
+                    break_on_hyphens=self._break_on_hyphens,
+                    break_long_words=self._break_long_words,
+                )
+            )
+
+        # Ensures that the directory included in the path exists and overwrites the local error log path
+        self._ensure_directory_exists(path)
+        self._error_log_path = path
 
     @property
     def has_handles(self) -> bool:

@@ -56,7 +56,7 @@ class Console:
             (set to None), logging non-error messages will be disabled.
         debug_log_path: The path to the file used to log debug messages (detail levels vary). If not provided
             (set to None), logging non-error messages will be disabled.
-        break_long_words: Determines whether long words can be broken-up when then text block is
+        break_long_words: Determines whether long words can be broken up when then text block is
             formatted to fit the width requirement.
         break_on_hyphens: determines whether breaking sentences on hyphens is allowed when text
             block is formatted to fit the width requirement.
@@ -67,6 +67,7 @@ class Console:
         _break_long_words: Determines whether to break text on long words.
         _break_on_hyphens: Determines whether to break text on hyphens.
         _use_color: Determines whether to colorize terminal output.
+        _valid_extensions: Stores valid log-file extensions. This is used to verify input log file paths.
         _message_log_path: Stores the path to the message log file.
         _error_log_path: Stores the path to the error log file.
         _debug_log_path: Stores the path to the debug log file.
@@ -83,6 +84,7 @@ class Console:
     _break_long_words: Incomplete
     _break_on_hyphens: Incomplete
     _use_color: Incomplete
+    _valid_extensions: Incomplete
     _debug_log_path: Incomplete
     _message_log_path: Incomplete
     _error_log_path: Incomplete
@@ -127,6 +129,45 @@ class Console:
         """A switch that enables logging messages and errors with this Console class."""
     def disable(self) -> None:
         """A switch that disables logging messages and errors with this Console class."""
+    @property
+    def get_debug_log_path(self) -> Path | None:
+        """Returns the path to the log file used to save messages at or below DEBUG level or None if the path was not
+        set."""
+    def set_debug_log_path(self, path: Path) -> None:
+        """This method sets the path to the log file used to save messages at or below DEBUG level.
+
+        Notes:
+            Remember to call add_handles() method to reconfigure the handles after providing the new path.
+
+        Raises:
+            ValueError: If the provided path does not end with one of the supported file-extensions.
+        """
+    @property
+    def get_message_log_path(self) -> Path | None:
+        """Returns the path to the log file used to save messages between INFO and WARNING levels or None if the path
+        was not set."""
+    def set_message_log_path(self, path: Path) -> None:
+        """This method sets the path to the log file used to save messages between INFO and WARNING levels.
+
+        Notes:
+            Remember to call add_handles() method to reconfigure the handles after providing the new path.
+
+        Raises:
+            ValueError: If the provided path does not end with one of the supported file-extensions.
+        """
+    @property
+    def get_error_log_path(self) -> Path | None:
+        """Returns the path to the log file used to save messages at or above ERROR level or None if the path was not
+        set."""
+    def set_error_log_path(self, path: Path) -> None:
+        """This method sets the path to the log file used to save messages at or above ERROR level.
+
+        Notes:
+            Remember to call add_handles() method to reconfigure the handles after providing the new path.
+
+        Raises:
+            ValueError: If the provided path does not end with one of the supported file-extensions.
+        """
     @property
     def has_handles(self) -> bool:
         """Returns True if the class uses LOGURU backend and the backend has configured handles.
@@ -187,7 +228,7 @@ class Console:
     def error(self, message: str, error: Callable[..., Exception] = ..., callback: Callable[[], Any] | None = ..., *, terminal: bool = True, log: bool = True, reraise: bool = False) -> None:
         """Raises and immediately logs the requested error.
 
-        This method allows to flexibly raise errors, while customizing (to a degree) the way errors are logged.
+        This method allows flexibly raising errors, while customizing (to a degree) the way errors are logged.
 
         Notes:
             If Console is disabled, the method will format the message and raise the input exception using standard

@@ -913,11 +913,10 @@ class Console:
                 click.echo(message=formatted_message, err=True, color=self._use_color)
             if reraise:
                 raise error(formatted_message)
+            else:
+                return
 
-        # If all other conditions are not met, raises the error using the standard Python 'raise' mechanism
-        else:
-            raise error(formatted_message)
-
-
-x = Console()
-print(x)
+        # With the way the rest of this class is structured, this will only be raised if all other backend-specific
+        # options are exhausted OR console is disabled. Having this as an unconditional end-statement ensures errors
+        # processed through console class will always be raised in some way.
+        raise error(formatted_message)

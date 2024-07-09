@@ -57,7 +57,7 @@ Documentation = "https://ataraxis-base-utilities-api-docs.netlify.app/"
 # stores conda, condarun and noconda lists that facilitate setting up dependencies via conda where possible.
 [project.optional-dependencies]
 
-# Runtime dependencies know to be installable with conda for all development platforms
+# Runtime dependencies known to be installable with conda for all development platforms
 # (OSX ARM64, WIN AMD64, LIN AMD64). This specification is used by ataraxis-automation to resolve as many
 # project dependencies with conda over pip as possible.
 conda_run = [

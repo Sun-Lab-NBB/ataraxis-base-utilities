@@ -903,6 +903,10 @@ class Console:
                 # noinspection PyCallingNonCallable
                 raise error(formatted_message)
 
+            # If loguru catches the error without re-raising or runtime-ending callback, ends the method runtime to
+            # avoid triggering the general error raiser at the bottom of the method block.
+            return
+
         # If the backend is click, prints the message to the requested destinations (file, terminal or both) and
         # optionally raises the error if re-raising is requested.
         elif self._backend == LogBackends.CLICK and self.is_enabled:
@@ -911,6 +915,9 @@ class Console:
                     click.echo(file=file, message=formatted_message, color=False)
             if terminal:
                 click.echo(message=formatted_message, err=True, color=self._use_color)
+
+            # If re-raising is requested, raises the error. Otherwise, ends the runtime to avoid triggering the general
+            # error raiser at the bottom of the method block.
             if reraise:
                 raise error(formatted_message)
             else:

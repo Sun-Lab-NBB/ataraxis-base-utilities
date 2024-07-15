@@ -15,6 +15,6 @@ from .console import Console, LogLevel, LogBackends, LogExtensions
 
 # Preconfigures and exposes Console class instance as a variable, similar to how Loguru exposes logger. This instance
 # can be used globally instead of defining a custom console variable.
-console: Console = Console(logger_backend=LogBackends.LOGURU)
+console: Console = Console(logger_backend=LogBackends.LOGURU, auto_handles=True)
 
 __all__ = ["console", "Console", "LogLevel", "LogBackends", "LogExtensions"]

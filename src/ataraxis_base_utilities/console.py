@@ -1,7 +1,9 @@
 """This module contains the Console class that provides message and error terminal-printing and file-logging
 functionality.
 
-Additionally, it contains enumerations and standalone functions that are used to support Console class runtimes.
+The Console class provides a flexible and opinionated interface that allows formatting messages and errors and printing
+them to terminal or writing them to log files. Additionally, it contains enumerations and standalone functions that are
+used to support Console class runtimes.
 """
 
 import sys
@@ -15,14 +17,10 @@ from collections.abc import Callable
 
 import click
 from loguru import logger
-from pydantic import validate_call
-
-# noinspection PyProtectedMember
-from loguru._logger import Logger
 
 
 def default_callback(__error: str | int | None = None) -> Any:
-    """Calls sys.exit() with a minimal explanation code.
+    """Calls sys.exit() with a minimal explanation message.
 
     This is a wrapper over sys.exit() that can be used as the input to 'onerror' argument of loguru catch() method.
     The main advantage of using this callback over the plain sys.exit is that it avoids reprinting the exception
@@ -152,6 +150,9 @@ class Console:
         properly, the Console has to be enabled at the highest level of the call hierarchy: from the main runtime
         script. Leave console configuration and enabling to the end-user.
 
+        For LOGURU backends, make sure you call add_handles() method prior to processing messages to ensure that the
+        class is properly configured to handle messages.
+
     Args:
         logger_backend: Specifies the backend used to process message and error terminal-printing and file-logging.
             Valid backend options are available through LogBackends enumeration and are currently limited to
@@ -164,11 +165,34 @@ class Console:
             provided (set to None), logging non-debug messages will be disabled.
         error_log_path: The path to the file used to log errors (messages at or above ERROR level). If not provided
             (set to None), logging errors will be disabled.
+        error_callback: Optional, only for loguru logging backends. Specifies the function Console.error() method
+            should call after catching the raised exception. This can be used to terminate or otherwise alter the
+            runtime without relying on the standard Python mechanism of retracing the call stack. For example, the
+            default callback terminates the runtime in-place, without allowing Python to retrace the call stack that is
+            already traced by loguru.
+        auto_handles: Determines whether to automatically call add_handles() method as necessary to ensure that loguru
+            'logger' instance always matches Console class configuration. This is a dangerous option that adds a lot of
+            convenience, but has the potential to interfere with all other calls to loguru. When enabled, add_handles()
+            will be called after modifying class properties and automatically as part of Console class initialization.
+            It is advised to never enable this option unless using Console in an interactive-environment known to not
+            contain any other sources or calls to loguru logger.
         break_long_words: Determines whether to break long words when formatting the text block to fit the width
             requirement.
         break_on_hyphens: Determines whether to break sentences on hyphens when formatting the text block to fit the
             width requirement.
         use_color: Determines whether to colorize the terminal output. This primarily applies to loguru backend.
+        debug_terminal: Determines whether to print messages at or below DEBUG level to terminal.
+        debug_file: Determines whether to write messages at or below DEBUG level to debug-log file. This only works if
+            a valid debug log file was provided.
+        message_terminal: Same as debug_terminal, but for messages at INFO through WARNING levels.
+        message_file: Same as debug_file, but for messages at INFO through WARNING levels.
+        error_terminal: Same as debug_terminal, but for messages at or above ERROR level.
+        error_file: Same as debug_file, but for messages at or above ERROR level.
+        reraise_errors: Determines whether Console.error() method should reraise errors after they are caught and
+            handled by the logging backend. For non-loguru backends, this determines if the error is raised in the first
+            place or if the method only logs the error message. This option is primarily intended for runtimes that
+            contain error-handling logic that has to be run in-addition to logging and tracing the error.
+
 
     Attributes:
         _line_width: Stores the maximum allowed text block line width, in characters.
@@ -181,17 +205,23 @@ class Console:
         _message_log_path: Stores the path to the message log file.
         _error_log_path: Stores the path to the error log file.
         _backend: Stores the backend option used to provide the terminal-printing and file-logging functionality.
-        _logger: When logging backend is set to LOGURU, stores the instance of the loguru 'Logger' class. Otherwise, it
-            is set to None.
         _is_enabled: Tracks whether logging through this class instance is enabled. When this tracker is False, echo()
             and print() methods will have limited or no functionality.
+        _debug_terminal: Tracks whether the class should print debug messages to terminal.
+        _debug_file: Tracks whether the class should write debug messages to debug log file.
+        _message_terminal: Tracks whether the class should print general messages to terminal.
+        _message_file: Tracks whether the class should write general messages to message log file.
+        _error_terminal: Tracks whether the class should print errors to terminal.
+        _error_file: Tracks whether the class is should write to error log file.
+        _reraise: Tracks whether the class should reraise errors after they are caught and handled by the logger
+            backend.
+        _callback: Stores the callback function Console.error() method should call after catching the raised error.
 
     Raises:
-        ValueError: If any of the provided log file paths is not valid.
-        ValidationError: If any of the input arguments are not of a valid type.
+        ValueError: If any of the provided log file paths is not valid. If the input line_width number is not valid.
+            If the input logger backend is not one of the supported backends.
     """
 
-    @validate_call()
     def __init__(
         self,
         logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = LogBackends.LOGURU,
@@ -199,9 +229,19 @@ class Console:
         message_log_path: Optional[Path | str] = None,
         error_log_path: Optional[Path | str] = None,
         line_width: int = 120,
+        error_callback: Optional[Callable[[], Any]] = default_callback,
+        *,
+        auto_handles: bool = False,
         break_long_words: bool = False,
         break_on_hyphens: bool = False,
         use_color: bool = True,
+        debug_terminal: bool = False,
+        debug_file: bool = False,
+        message_terminal: bool = True,
+        message_file: bool = False,
+        error_terminal: bool = True,
+        error_file: bool = False,
+        reraise_errors: bool = False,
     ) -> None:
         # Message formating parameters.
         if line_width <= 0:
@@ -218,6 +258,14 @@ class Console:
         self._break_long_words: bool = break_long_words
         self._break_on_hyphens: bool = break_on_hyphens
         self._use_color: bool = use_color
+
+        # Output control parameters.
+        self._debug_terminal: bool = debug_terminal
+        self._debug_file: bool = debug_file
+        self._message_terminal: bool = message_terminal
+        self._message_file: bool = message_file
+        self._error_terminal: bool = error_terminal
+        self._error_file: bool = error_file
 
         self._valid_extensions: tuple[str, ...] = LogExtensions.values()
 
@@ -241,6 +289,9 @@ class Console:
                 )
             # If the path is valid, verifies the directory portion of the path exists and, if not, creates it.
             self._ensure_directory_exists(debug_log_path)
+        else:
+            # If the debug log file is not provided, ensures debug logging is disabled.
+            self._debug_file = False
 
         if not isinstance(message_log_path, NoneType):
             message_log_path = Path(message_log_path)
@@ -259,6 +310,9 @@ class Console:
                     )
                 )
             self._ensure_directory_exists(message_log_path)
+        else:
+            # If the message log file is not provided, ensures message logging is disabled.
+            self._message_file = False
 
         if not isinstance(error_log_path, NoneType):
             error_log_path = Path(error_log_path)
@@ -278,36 +332,60 @@ class Console:
                 )
 
             self._ensure_directory_exists(error_log_path)
+        else:
+            # If the error log file is not provided, ensures error logging is disabled.
+            self._error_file = False
 
+        # Writes resolved log paths (or Nones) to appropriate storage attributes.
         self._debug_log_path: Optional[Path] = debug_log_path
         self._message_log_path: Optional[Path] = message_log_path
         self._error_log_path: Optional[Path] = error_log_path
 
         # Internal trackers
+        # Ensures logger backend is one of the supported options.
+        if logger_backend not in LogBackends:
+            message = (
+                f"Invalid 'logger_backend' argument encountered when instantiating Console class instance. "
+                f"Expected a member of the LogBackends enumeration, but encountered {logger_backend}."
+            )
+            raise ValueError(
+                textwrap.fill(
+                    text=message,
+                    width=self._line_width,
+                    break_on_hyphens=self._break_on_hyphens,
+                    break_long_words=self._break_long_words,
+                )
+            )
+
+        # Saves the backend type to a local variable.
         self._backend = logger_backend
-        if logger_backend == LogBackends.LOGURU:
-            self._logger: Optional[Logger] = logger  # type: ignore
-        else:
-            self._logger = None
+
+        # Specifies error-specific additional parameters
+        self._reraise: bool = reraise_errors
+        self._callback: Optional[Callable[[], Any]] = error_callback
+
+        self._auto_handles = auto_handles
+
+        # If automatic handle addition is enabled, adds handles to configure loguru backend.
+        if auto_handles:
+            self.add_handles()
+
+        # Ensures the Console is disabled until it is manually enabled by the end-user.
         self._is_enabled: bool = False
 
     def __repr__(self) -> str:
+        """Returns a string representation of the class instance."""
         return (
-            f"Console(backend={self._backend}, has_handles={self.has_handles}, enabled={self.is_enabled}, "
-            f"line_width={self._line_width})"
+            f"Console(backend={self._backend}, has_handles={self.has_handles}, auto_handles={self._auto_handles}, "
+            f"enabled={self.is_enabled}, line_width={self._line_width}, debug_terminal={self._debug_terminal}, "
+            f"debug_file={self._debug_file}, message_terminal={self._message_terminal}, "
+            f"message_file={self._message_file}, error_terminal={self._error_terminal}, error_file={self._error_file})"
         )
 
-    @validate_call()
     def add_handles(
         self,
         *,
         remove_existing_handles: bool = True,
-        debug_terminal: bool = False,
-        debug_file: bool = False,
-        message_terminal: bool = True,
-        message_file: bool = False,
-        error_terminal: bool = True,
-        error_file: bool = False,
         enqueue: bool = False,
     ) -> None:
         """(Re)configures the local loguru 'logger' instance to use requested handles after optionally removing all
@@ -325,10 +403,14 @@ class Console:
         avoid interfering with upstream processes instantiating their own handles.
 
         Notes:
-            The method can be flexibly configured to only add a subset of all supported handles. For example,
-            by default, it does not add debug handles, making it impossible to terminal-print or file-log debug
-            messages. It can also be configured to not remove existing handles (default behavior) if necessary. See
-            argument docstrings below for more information.
+            The method is flexibly configured to only add a subset of all supported handles, which depends on the
+            Console class configuration. For example, by default, it does not add debug handles, making it impossible
+            to terminal-print or file-log debug messages. It can also be configured to not remove existing handles
+            (default behavior) if necessary.
+
+            The handles added by this method depend on the Console class _debug_terminal, debug_file, message_terminal,
+            message_file, error_terminal, and error_file attributes. You can access their values using property methods
+            and set their values using appropriate toggle methods after class initialization.
 
             During runtime, handles determine what happens to the message passed via the appropriate 'log' call. Loguru
             shares the set of handles across all 'logger' instances, which means this method should be used with
@@ -337,60 +419,27 @@ class Console:
         Args:
             remove_existing_handles: Determines whether to remove all existing handles before adding new loguru handles.
                 Since loguru comes with 'default' handles enabled, this is almost always the recommended option.
-            debug_terminal: Determines whether to add the handle that prints messages at or below DEBUG level to
-                terminal.
-            debug_file: Determines whether to add the handle that writes messages at or below DEBUG level to debug-log
-                file.
-            message_terminal: Same as debug_terminal, but for messages at INFO through WARNING levels.
-            message_file: Same as debug_file, but for messages at INFO through WARNING levels.
-            error_terminal: Same as debug_terminal, but for messages at or above ERROR level.
-            error_file: Same as debug_file, but for messages at or above ERROR level.
             enqueue: Determines if messages are processed synchronously or asynchronously. Generally, this option is
                 only suggested for multiprocessing runtimes that handle messages from multiple processes, as queueing
                 messages prevents common multiprocessing / multithreading issues such as race conditions.
-
-        Raises:
-            ValidationError: If any of the input arguments are not of a valid type.
         """
         # Returns immediately for non-loguru Consoles.
-        if self._backend != LogBackends.LOGURU or isinstance(self._logger, NoneType):
+        if self._backend != LogBackends.LOGURU:
             return
 
         # If necessary, removes existing handles.
         if remove_existing_handles:
-            self._logger.remove()
-
-        # Adds ataraxis_shell and ataraxis_log flags to the 'extras' dictionary passed together with each logged
-        # message. These flags are used to dynamically control whether every processed message should be sent to
-        # the terminal, written to the file or both.
-        self._logger = self._logger.bind(ataraxis_shell=False, ataraxis_log=False)
-
-        # Mostly here to prevent mypy being annoying, as the error is not really possible
-        if isinstance(self._logger, NoneType):
-            message = (
-                "Unable to bind the logger to use the required extra variables. Generally, this error should not be "
-                "possible"
-            )
-            raise RuntimeError(
-                textwrap.fill(
-                    text=message,
-                    width=self._line_width,
-                    break_on_hyphens=self._break_on_hyphens,
-                    break_long_words=self._break_long_words,
-                )
-            )
+            logger.remove()
 
         # Debug terminal-printing handle. Filters and works for any message with the log-level at or below DEBUG.
         # Includes 'diagnose' information, which provides additional information about the objects involved in
-        # generating the message. Also uses 'ataraxis_shell' extra tag to determine if any message should be processed
-        # or not.
-        if debug_terminal:
+        # generating the message.
+        if self._debug_terminal:
             # noinspection LongLine
-            self._logger.add(
+            logger.add(
                 sys.stdout,
                 format="<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | <level>{level: <8}</level> | <level>{message}</level>",
-                filter=lambda record: record["extra"]["ataraxis_terminal"] is True
-                and record["level"].no <= logger.level("DEBUG").no,
+                filter=lambda record: record["level"].no <= logger.level("DEBUG").no,
                 colorize=True,
                 backtrace=False,
                 diagnose=True,
@@ -399,13 +448,12 @@ class Console:
 
         # Message terminal-printing handle. Functions as a prettier, time-stamped print. Does not include any additional
         # information and only prints messages with level above DEBUG and up to WARNING (inclusive).
-        if message_terminal:
+        if self._message_terminal:
             # noinspection LongLine
-            self._logger.add(
+            logger.add(
                 sys.stdout,
                 format="<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | <level>{level: <8}</level> | <level>{message}</level>",
-                filter=lambda record: record["extra"]["ataraxis_terminal"] is True
-                and logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
+                filter=lambda record: logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
                 colorize=True,
                 backtrace=False,
                 diagnose=False,
@@ -416,13 +464,12 @@ class Console:
         # backtrace of the error message. It works similarly to default python error traces, but without mandatory
         # runtime termination. Works for ERROR+ level messages. Unlike other two handles, writes to
         # stderr, rather than stdout.
-        if error_terminal:
+        if self._error_terminal:
             # noinspection LongLine
-            self._logger.add(
+            logger.add(
                 sys.stderr,
                 format="<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | <level>{level: <8}</level> | <level>{message}</level>",
-                filter=lambda record: record["extra"]["ataraxis_terminal"] is True
-                and record["level"].no > logger.level("WARNING").no,
+                filter=lambda record: record["level"].no > logger.level("WARNING").no,
                 colorize=True,
                 backtrace=True,
                 diagnose=False,
@@ -432,11 +479,10 @@ class Console:
         # Debug file-writing handle. The only difference from the terminal handle is that it writes to a file, rather
         # than the stdout handle and that ut uses ataraxis_log tag instead of the ataraxis_shell. Debug files are
         # automatically removed after 2 days and are not compressed as they are considered temporary.
-        if not isinstance(self._debug_log_path, NoneType) and debug_file:
-            self._logger.add(
+        if not isinstance(self._debug_log_path, NoneType) and self._debug_file:
+            logger.add(
                 self._debug_log_path,
-                filter=lambda record: record["extra"]["ataraxis_log"] is True
-                and record["level"].no <= logger.level("DEBUG").no,
+                filter=lambda record: record["level"].no <= logger.level("DEBUG").no,
                 colorize=False,
                 retention="2 days",
                 rotation="500 MB",
@@ -445,11 +491,10 @@ class Console:
 
         # Message file-writing handle. Functions similarly to terminal-printing handle, but prints to a file that does
         # not have a rotation window and is retained forever.
-        if not isinstance(self._message_log_path, NoneType) and message_file:
-            self._logger.add(
+        if not isinstance(self._message_log_path, NoneType) and self._message_file:
+            logger.add(
                 self._message_log_path,
-                filter=lambda record: record["extra"]["ataraxis_log"] is True
-                and logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
+                filter=lambda record: logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
                 colorize=False,
                 enqueue=enqueue,
             )
@@ -457,11 +502,10 @@ class Console:
         # Error file-writing handle. Error files are rotated once they reach 100 MB and only retained for 5 days.
         # In addition to the full traceback, the logs include diagnostic information that provides data about objects
         # along the execution stack that led to an error to allow in-depth analysis of the problem.
-        if not isinstance(self._error_log_path, NoneType) and error_file:
-            self._logger.add(
+        if not isinstance(self._error_log_path, NoneType) and self._error_file:
+            logger.add(
                 self._error_log_path,
-                filter=lambda record: record["extra"]["ataraxis_log"] is True
-                and record["level"].no >= logger.level("ERROR").no,
+                filter=lambda record: record["level"].no >= logger.level("ERROR").no,
                 colorize=False,
                 backtrace=True,
                 diagnose=True,
@@ -484,12 +528,11 @@ class Console:
         self._is_enabled = False
 
     @property
-    def get_debug_log_path(self) -> Path | None:
+    def debug_log_path(self) -> Path | None:
         """Returns the path to the log file used to save messages at or below DEBUG level or None if the path was not
         set."""
         return self._debug_log_path
 
-    @validate_call()
     def set_debug_log_path(self, path: Path) -> None:
         """Sets the path to the log file used to save messages at or below DEBUG level.
 
@@ -520,13 +563,15 @@ class Console:
         self._ensure_directory_exists(path)
         self._debug_log_path = path
 
+        if self._auto_handles:
+            self.add_handles(remove_existing_handles=True)
+
     @property
-    def get_message_log_path(self) -> Path | None:
+    def message_log_path(self) -> Path | None:
         """Returns the path to the log file used to save messages at INFO through WARNING levels or None if the path
         was not set."""
         return self._message_log_path
 
-    @validate_call()
     def set_message_log_path(self, path: Path) -> None:
         """Sets the path to the log file used to save messages at INFO through WARNING levels.
 
@@ -556,13 +601,15 @@ class Console:
         self._ensure_directory_exists(path)
         self._message_log_path = path
 
+        if self._auto_handles:
+            self.add_handles(remove_existing_handles=True)
+
     @property
-    def get_error_log_path(self) -> Path | None:
+    def error_log_path(self) -> Path | None:
         """Returns the path to the log file used to save messages at or above ERROR level or None if the path was not
         set."""
         return self._error_log_path
 
-    @validate_call()
     def set_error_log_path(self, path: Path) -> None:
         """Sets the path to the log file used to save messages at or above ERROR level.
 
@@ -592,15 +639,19 @@ class Console:
         self._ensure_directory_exists(path)
         self._error_log_path = path
 
+        if self._auto_handles:
+            self.add_handles(remove_existing_handles=True)
+
     @property
     def has_handles(self) -> bool:
         """Returns True if the class uses loguru backend and the backend has configured handles.
 
         If the class does not use loguru backend or if the class uses loguru and does not have handles, returns
-        False."""
-        if self._backend == LogBackends.LOGURU and not isinstance(self._logger, NoneType):
-            # noinspection PyProtectedMember
-            return len(self._logger._core.handlers) > 0
+        False.
+        """
+        if self._backend == LogBackends.LOGURU:
+            # noinspection PyProtectedMember,PyUnresolvedReferences
+            return len(logger._core.handlers) > 0
         else:
             return False
 
@@ -608,6 +659,91 @@ class Console:
     def is_enabled(self) -> bool:
         """Returns True if logging with this Console class instance is enabled."""
         return self._is_enabled
+
+    @property
+    def debug_terminal(self) -> bool:
+        """Returns True if printing messages at or below DEBUG level to terminal is allowed."""
+        return self._debug_terminal
+
+    def set_debug_terminal(self, enabled: bool) -> None:
+        """Sets the value of the debug_terminal attribute to the specified value."""
+        self._debug_terminal = enabled
+
+        if self._auto_handles:
+            self.add_handles(remove_existing_handles=True)
+
+    @property
+    def debug_file(self) -> bool:
+        """Returns True if writing messages at or below DEBUG level to log file is allowed."""
+        return self._debug_file
+
+    def set_debug_file(self, enabled: bool) -> None:
+        """Sets the value of the debug_file attribute to the specified value."""
+        self._debug_file = enabled
+
+        if self._auto_handles:
+            self.add_handles(remove_existing_handles=True)
+
+    @property
+    def message_terminal(self) -> bool:
+        """Returns True if printing messages between INFO and WARNING levels to terminal is allowed."""
+        return self._message_terminal
+
+    def set_message_terminal(self, enabled: bool) -> None:
+        """Sets the value of the message_terminal attribute to the specified value."""
+        self._message_terminal = enabled
+
+        if self._auto_handles:
+            self.add_handles(remove_existing_handles=True)
+
+    @property
+    def message_file(self) -> bool:
+        """Returns True if writing messages between INFO and WARNING levels to log file is allowed."""
+        return self._message_file
+
+    def set_message_file(self, enabled: bool) -> None:
+        """Sets the value of the message_file attribute to the specified value."""
+        self._message_file = enabled
+
+        if self._auto_handles:
+            self.add_handles(remove_existing_handles=True)
+
+    @property
+    def error_terminal(self) -> bool:
+        """Returns True if printing messages at or above ERROR level to terminal is allowed."""
+        return self._error_terminal
+
+    def set_error_terminal(self, enabled: bool) -> None:
+        """Sets the value of the error_terminal attribute to the specified value."""
+        self._error_terminal = enabled
+
+        if self._auto_handles:
+            self.add_handles(remove_existing_handles=True)
+
+    @property
+    def error_file(self) -> bool:
+        """Returns True if writing messages at or above ERROR level to log file is allowed."""
+        return self._error_file
+
+    def set_error_file(self, enabled: bool) -> None:
+        """Sets the value of the error_file attribute to the specified value."""
+        self._error_file = enabled
+
+        if self._auto_handles:
+            self.add_handles(remove_existing_handles=True)
+
+    def set_callback(self, callback: Optional[Callable[[], Any]]) -> None:
+        """Sets the class _callback attribute to the provided callback function."""
+        self._callback = callback
+
+    @property
+    def reraise(self):
+        """Returns True if Console.error() method should reraise logged error messages."""
+        return self._reraise
+
+    def set_reraise(self, enabled: bool) -> None:
+        """Sets the value of the reraise attribute to the specified value."""
+        self._reraise = enabled
 
     @staticmethod
     def _ensure_directory_exists(path: Path) -> None:
@@ -627,7 +763,6 @@ class Console:
             # If the path is a directory path, ensures the directory exists.
             path.mkdir(parents=True, exist_ok=True)
 
-    @validate_call()
     def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the class configuration parameters.
 
@@ -637,14 +772,11 @@ class Console:
 
         Args:
             message: The text string to format according to class configuration parameters.
-            loguru: A flag that determines if the message is intended to be subsequently processed via loguru backend or
-                another method or backend (e.g.: Exception class or CLICK backend).
+            loguru: Determines if the message is intended to be subsequently processed via loguru backend or another
+                method or backend (e.g.: Exception class or CLICK backend).
 
         Returns:
             Formatted text message (augmented with newline and other service characters as necessary).
-
-        Raises:
-            ValidationError: If any of the arguments are not of a valid type.
         """
 
         # For loguru-processed messages, uses a custom formatting that accounts for the prepended header. The header
@@ -691,34 +823,30 @@ class Console:
                 break_on_hyphens=self._break_on_hyphens,
             )
 
-    @validate_call()
-    def echo(self, message: str, level: LogLevel = LogLevel.INFO, *, terminal: bool = True, log: bool = True) -> bool:
+    def echo(self, message: str, level: LogLevel = LogLevel.INFO) -> bool:
         """Formats the input message according to the class configuration and outputs it to the terminal, file, or both.
 
         In a way, this can be seen as a better 'print'. Specifically, in addition to printing the text to the terminal,
         this method supports colored output and can simultaneously print the message to the terminal and write it to a
-        log file.
+        log file. The exact outcome of running this method depends on the overall Console class configuration.
+
+        Notes:
+            This method uses Console properties such as message_terminal, error_terminal, and error_file to determine
+            whether printing, logging, or both are allowed. For loguru backend, the decision depends on whether the
+            necessary handles have been added (or removed) from the backend. This can either be done manually or as a
+            co-routine of the setter methods used to enable and disable certain types of outputs.
 
         Args:
             message: The message to be processed.
             level: The severity level of the message. This method supports all levels available through the LogLevel
                 enumeration, but is primarily intended to be used for DEBUG, INFO, SUCCESS, and WARNING messages.
                 Errors should be raised through the error() method when possible.
-            terminal: The flag that determines whether the message should be printed to the terminal using the class
-                logging backend. For loguru backend, this acts on top of the handle configuration. If there are no
-                handles to print the message to the terminal, the value of this flag is ignored.
-            log: The flag that determines whether the message should be written to a log file using the class logging
-                backend. For loguru backend, this acts on top of the handle configuration. If there are no
-                handles to save the message to a log file, the value of this flag is ignored. Note, the handle
-                configuration is in turn dependent on whether valid log file path(s) were provided to the class before
-                calling add_handles() method.
 
         Returns:
             True if the message has been processed and False if the message cannot be printed because the Console is
             disabled.
 
         Raises:
-            ValidationError: If any of the input arguments are not of a valid type.
             RuntimeError: If the method is called while using loguru backend without any active logger handles.
         """
 
@@ -727,12 +855,12 @@ class Console:
             return False
 
         # Loguru backend
-        if self._backend == LogBackends.LOGURU and not isinstance(self._logger, NoneType):
+        if self._backend == LogBackends.LOGURU:
             if not self.has_handles:
                 message = (
-                    f"Unable to echo the requested message: {message}. The Console class is configured to use the "
-                    f"loguru backend, but it does not have any handles. Call add_handles() method to add "
-                    f"handles or disable() to disable Console operation."
+                    f"Unable to echo the requested message. The Console class is configured to use the loguru backend, "
+                    f"but it does not have any handles. Call add_handles() method to add handles or disable() to "
+                    f"disable Console operation. The message that was attempted to be echoed: {message}"
                 )
                 raise RuntimeError(
                     textwrap.fill(
@@ -746,83 +874,58 @@ class Console:
             # Formats the message to work with additional loguru-prepended header.
             formatted_message = self.format_message(message=message, loguru=True)
 
-            # Logs the message using the appropriate channel and file / terminal options.
-            self._logger = self._logger.bind(ataraxis_log=log, ataraxis_terminal=terminal)
-
-            # Mostly here to prevent mypy being annoying, as the error is not really possible
-            if isinstance(self._logger, NoneType):
-                message = (
-                    "Unable to bind the logger to use the required extra variables. Generally, this error should "
-                    "not be possible."
-                )
-                raise RuntimeError(
-                    textwrap.fill(
-                        text=message,
-                        width=self._line_width,
-                        break_on_hyphens=self._break_on_hyphens,
-                        break_long_words=self._break_long_words,
-                    )
-                )
-
             # For loguru, the message just needs to be logged. Loguru will use available handles to determine where to
-            # route the message.
+            # route the message. The handles are, in turn, configured to match the class configuration to determine
+            # the allowed output format.
             if level == LogLevel.DEBUG:
-                self._logger.debug(formatted_message)
+                logger.debug(formatted_message)
             elif level == LogLevel.INFO:
-                self._logger.info(formatted_message)
+                logger.info(formatted_message)
             elif level == LogLevel.SUCCESS:
-                self._logger.success(formatted_message)
+                logger.success(formatted_message)
             elif level == LogLevel.WARNING:
-                self._logger.warning(formatted_message)
+                logger.warning(formatted_message)
             elif level == LogLevel.ERROR:
-                self._logger.error(formatted_message)
+                logger.error(formatted_message)
             elif level == LogLevel.CRITICAL:
-                self._logger.critical(formatted_message)
+                logger.critical(formatted_message)
 
         elif self._backend == LogBackends.CLICK:
             # Formats the message using non-loguru parameters
             formatted_message = self.format_message(message=message, loguru=False)
 
             # For click, terminal and log file inputs are processed separately
-            if terminal:
-                if level == LogLevel.DEBUG:
-                    click.secho(message=formatted_message, err=False, color=self._use_color, fg="cyan")
-                elif level == LogLevel.INFO:
-                    click.secho(message=formatted_message, err=False, color=self._use_color, fg="white")
-                elif level == LogLevel.SUCCESS:
-                    click.secho(message=formatted_message, err=False, color=self._use_color, fg="green")
-                elif level == LogLevel.WARNING:
-                    click.secho(message=formatted_message, err=False, color=self._use_color, fg="yellow")
-                elif level == LogLevel.ERROR:
-                    click.secho(message=formatted_message, err=True, color=self._use_color, fg="red")
-                elif level == LogLevel.CRITICAL:
-                    click.secho(message=formatted_message, err=True, color=self._use_color, fg="red", bg="white")
+            if level == LogLevel.DEBUG and self._debug_terminal:
+                click.secho(message=formatted_message, err=False, color=self._use_color, fg="cyan")
+            elif level == LogLevel.INFO and self._message_terminal:
+                click.secho(message=formatted_message, err=False, color=self._use_color, fg="white")
+            elif level == LogLevel.SUCCESS and self._message_terminal:
+                click.secho(message=formatted_message, err=False, color=self._use_color, fg="green")
+            elif level == LogLevel.WARNING and self._message_terminal:
+                click.secho(message=formatted_message, err=False, color=self._use_color, fg="yellow")
+            elif level == LogLevel.ERROR and self._error_terminal:
+                click.secho(message=formatted_message, err=True, color=self._use_color, fg="red")
+            elif level == LogLevel.CRITICAL and self._error_terminal:
+                click.secho(message=formatted_message, err=True, color=self._use_color, fg="red", bg="white")
 
             # Does not use colors when writing to log files.
-            if log:
-                if level == LogLevel.DEBUG and self._debug_log_path:
-                    with open(file=str(self._debug_log_path), mode="a") as file:
-                        click.echo(file=file, message=formatted_message, color=False)
-                elif level == LogLevel.ERROR or level == LogLevel.CRITICAL and self._error_log_path:
-                    with open(file=str(self._error_log_path), mode="a") as file:
-                        click.echo(file=file, message=formatted_message, color=False)
-                elif self._message_log_path:
-                    with open(file=str(self._message_log_path), mode="a") as file:
-                        click.echo(file=file, message=formatted_message, color=False)
+            if level == LogLevel.DEBUG and self._debug_log_path and self._debug_file:
+                with open(file=str(self._debug_log_path), mode="a") as file:
+                    click.echo(file=file, message=formatted_message, color=False)
+            elif level == LogLevel.ERROR or level == LogLevel.CRITICAL and self._error_log_path and self._error_file:
+                with open(file=str(self._error_log_path), mode="a") as file:
+                    click.echo(file=file, message=formatted_message, color=False)
+            elif self._message_log_path and self._message_file:
+                with open(file=str(self._message_log_path), mode="a") as file:
+                    click.echo(file=file, message=formatted_message, color=False)
 
         # Returns true to indicate that the message was processed.
         return True
 
-    @validate_call()
     def error(
         self,
         message: str,
         error: Callable[..., Exception] = RuntimeError,
-        callback: Optional[Callable[[], Any]] = default_callback,
-        *,
-        terminal: bool = True,
-        log: bool = True,
-        reraise: bool = False,
     ) -> None:
         """Raises the requested error.
 
@@ -833,31 +936,19 @@ class Console:
         Notes:
             When console is enabled, this method can be used to flexibly handle raise errors in-place. For example, it
             can be used to redirect errors to log file, provides enhanced traceback and analysis data (for loguru
-            backend only) and can even execute callback functions after logging the error (also for loguru backend only.
+            backend only) and can even execute callback functions after logging the error
+            (also for loguru backend only.)
+
+            This method uses Console properties such as error_terminal, and error_file to determine whether printing,
+            logging, or both are allowed. For loguru backend, the decision depends on whether the necessary handles
+            have been added (or removed) from the backend. This can either be done manually or as a co-routine of the
+            setter methods used to enable and disable certain types of outputs.
 
         Args:
             message: The error-message to use for the raised error.
             error: The callable Exception class to be raised by the method.
-            callback: Optional, only for loguru logging backends. The function to call after catching the raised
-                exception. This can be used to terminate or otherwise alter the runtime without relying on the standard
-                Python mechanism of retracing the call stack. For example, the default callback terminates the runtime
-                in-place, without allowing Python to retrace the call stack that is already traced by loguru.
-            terminal: The flag that determines whether the error should be printed to the terminal using the class
-                logging backend. For loguru backend, this acts on top of the handle configuration. If there are no
-                handles to print the error to the terminal, the value of this flag is ignored.
-            log: The flag that determines whether the error should be written to a log file using the class logging
-                backend. For loguru backend, this acts on top of the handle configuration. If there are no
-                handles to save the error to log file, the value of this flag is ignored. Note, the handle
-                configuration is in turn dependent on whether valid log file path(s) were provided to the class before
-                calling add_handles() method.
-            reraise: The flag that determines whether to reraise the error after it is caught and handled by
-                the logging backend. For non-loguru backends, this determines if the error is raised in the first place
-                or if the method only logs the error message. This option is primarily intended for runtimes that
-                contain error-handling logic that has to be run in-addition to logging and tracing the error, such as
-                pytest or similar frameworks.
 
         Raises:
-            ValidationError: If any of the inputs are not of a valid type.
             RuntimeError: If the method is called while using loguru backend without any active logger handles.
         """
 
@@ -865,7 +956,7 @@ class Console:
         formatted_message: str = self.format_message(message, loguru=False)
 
         # If the backend is loguru, raises and catches the exception with loguru
-        if self._backend == LogBackends.LOGURU and not isinstance(self._logger, NoneType) and self.is_enabled:
+        if self._backend == LogBackends.LOGURU and self.is_enabled:
             if not self.has_handles:
                 message = (
                     f"Unable to properly log the requested error ({error}) with message {message}. The Console class "
@@ -881,25 +972,7 @@ class Console:
                     )
                 )
 
-            # Configures the logger to bind the proper flags to direct the message to log, terminal or nowhere
-            self._logger = self._logger.bind(ataraxis_log=log, ataraxis_terminal=terminal)
-
-            # Mostly here to prevent mypy being annoying, as the error is not really possible
-            if isinstance(self._logger, NoneType):
-                message = (
-                    "Unable to bind the logger to use the required extra variables. Generally, this error should not "
-                    "be possible."
-                )
-                raise RuntimeError(
-                    textwrap.fill(
-                        text=message,
-                        width=self._line_width,
-                        break_on_hyphens=self._break_on_hyphens,
-                        break_long_words=self._break_long_words,
-                    )
-                )
-
-            with self._logger.catch(reraise=reraise, onerror=callback):
+            with logger.catch(reraise=self._reraise, onerror=self._callback):
                 # noinspection PyCallingNonCallable
                 raise error(formatted_message)
 
@@ -910,15 +983,15 @@ class Console:
         # If the backend is click, prints the message to the requested destinations (file, terminal or both) and
         # optionally raises the error if re-raising is requested.
         elif self._backend == LogBackends.CLICK and self.is_enabled:
-            if log:
+            if self._error_file and self._error_log_path is not None:
                 with open(file=str(self._error_log_path), mode="a") as file:
                     click.echo(file=file, message=formatted_message, color=False)
-            if terminal:
+            if self._error_terminal:
                 click.echo(message=formatted_message, err=True, color=self._use_color)
 
             # If re-raising is requested, raises the error. Otherwise, ends the runtime to avoid triggering the general
             # error raiser at the bottom of the method block.
-            if reraise:
+            if self._reraise:
                 raise error(formatted_message)
             else:
                 return

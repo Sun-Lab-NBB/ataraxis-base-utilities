@@ -1,7 +1,8 @@
 """This library exposes a minimalistic set of shared utility functions used to support other projects.
 
 This library has a very broad scope: it centralizes widely shared functionality used across multiple
-Sun Lab projects. Any function reused by more than 5 other projects becomes a candidate for inclusion into this library.
+Sun Lab projects. Any class or function reused by more than 5 other projects becomes a candidate for inclusion into
+this library.
 
 Currently, the library provides the following functionality:
 - Console: A class that provides message and error printing and logging functionality.

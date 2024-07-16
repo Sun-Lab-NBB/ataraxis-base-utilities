@@ -5,7 +5,7 @@
 requires = ["hatchling>=1,<2"]
 build-backend = "hatchling.build"
 
-# Project metdata section. Provides the genral ID information about the project.
+# Project metadata section. Provides the genral ID information about the project.
 [project]
 name = "ataraxis-base-utilities"
 version = "2.0.0"
@@ -64,7 +64,7 @@ conda_run = [
     "loguru>=0,<1",
 ]
 
-# Depepndencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
+# Dependencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
 conda = [
     # Tox
     "tox>=4,<5",
@@ -114,8 +114,8 @@ noconda =[
     "ataraxis-automation>=2,<3",
 ]
 
-# A shorhand specification that installs tox and all packages required for development tasks. This specification can
-# be used by developers to quickly install all necessary compontents for working on this project. Has to be installed
+# A shorthand specification that installs tox and all packages required for development tasks. This specification can
+# be used by developers to quickly install all necessary components for working on this project. Has to be installed
 # from pip.
 dev = [
     "ataraxis-base-utilities[conda]",

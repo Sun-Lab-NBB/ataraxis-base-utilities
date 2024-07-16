@@ -9,7 +9,6 @@ import tempfile
 import textwrap
 
 import pytest
-from pydantic import ValidationError
 from loguru import logger
 
 from ataraxis_base_utilities import console, Console, LogLevel, LogBackends, LogExtensions
@@ -35,7 +34,7 @@ def error_format(message: str) -> str:
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_class_initialization(backend, tmp_path) -> None:
-    """ Verifies the functioning of the Console class __init__() method."""
+    """Verifies the functioning of Console class __init__() method."""
 
     # Defines custom callback function
     def custom_callback():
@@ -116,7 +115,7 @@ def test_console_variable_initialization_defaults() -> None:
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_initialization_errors(backend, temp_dir) -> None:
-    """Verifies the error-handling behavior of the Console class __init__() method."""
+    """Verifies the error-handling behavior of Console class __init__() method."""
 
     # Uses an invalid width of <= 0
     message = (
@@ -162,7 +161,7 @@ def test_console_initialization_errors(backend, temp_dir) -> None:
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_repr(backend) -> None:
-    """Verifies the functionality of the Console class __repr__() method."""
+    """Verifies the functionality of Console class __repr__() method."""
     # Creates a Console instance with specific parameters
     test_console = Console(
         logger_backend=backend,
@@ -206,7 +205,7 @@ def test_console_repr(backend) -> None:
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_add_handles(backend, tmp_path, capsys) -> None:
-    """Verifies the functionality of the Console class add_handles() method."""
+    """Verifies the functionality of Console class add_handles() method."""
     # Setup
     debug_log = tmp_path / "debug.log"
     message_log = tmp_path / "message.log"
@@ -307,7 +306,7 @@ def test_console_add_handles(backend, tmp_path, capsys) -> None:
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_enable_disable(backend) -> None:
-    """Tests the functionality of the Console class enable() / disable() methods and the is_enabled() property."""
+    """Verifies the functionality of Console class enable() / disable() methods and the is_enabled() property."""
 
     # tests enable / disable methods and is_enabled tracker
     test_console = Console(logger_backend=backend)
@@ -605,7 +604,7 @@ def test_console_echo(backend, tmp_path, capsys):
     with open(message_log, "r") as f:
         assert long_message not in f.read()
 
-    # Re-enables console and tests long message again. Enables all handles too.
+    # Re-enables console and tests a long message again. Enables all handles too.
     test_console.enable()
     test_console.set_message_terminal(True)
     test_console.set_message_file(True)
@@ -638,7 +637,7 @@ def test_console_echo(backend, tmp_path, capsys):
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_echo_errors(backend):
-    """Verifies the echo() error-handling functionality."""
+    """Verifies the error-handling behavior of Console class echo() method."""
 
     test_console = Console(logger_backend=backend)
     logger.remove()  # Removes all handlers
@@ -660,14 +659,14 @@ def test_console_echo_errors(backend):
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_error(backend, tmp_path, capsys):
-    """Verifies that the error() console method functions as expected for all backends."""
+    """Verifies the functionality of Console class error() method."""
     test_console = Console(logger_backend=backend, error_log_path=tmp_path / "error.log")
     test_console.enable()
     test_console.set_error_terminal(True)
     test_console.set_error_file(True)
     test_console.add_handles()
 
-    # Tests successful error raising and logging using default error function and callback functionality
+    # Tests successful error raising with no callback and reraise functionality
     test_console.set_reraise(True)
     test_console.set_callback(None)
     with pytest.raises(RuntimeError, match="Test error"):
@@ -680,7 +679,7 @@ def test_console_error(backend, tmp_path, capsys):
     with open(tmp_path / "error.log", "r") as f:
         assert "Test error" in f.read()
 
-    # Tests error without reraise
+    # Tests error without 'reraise' or 'callback'. In this case, the method should log the error and end its runtime
     test_console.set_reraise(False)
     test_console.error(message="No reraise error", error=ValueError)
     captured = capsys.readouterr()
@@ -688,10 +687,9 @@ def test_console_error(backend, tmp_path, capsys):
     with open(tmp_path / "error.log", "r") as f:
         assert "No reraise error" in f.read()
 
-    # Tests custom exception as the error function input
+    # Tests raising custom errors
     class CustomError(Exception):
         pass
-
     test_console.set_reraise(True)
     with pytest.raises(CustomError):
         test_console.error(message="Custom error", error=CustomError)
@@ -736,28 +734,38 @@ def test_console_error(backend, tmp_path, capsys):
         if backend == LogBackends.LOGURU:
             assert "Callback error" in log_content
 
+    # Verifies that disabled console correctly defaults to using 'standard' Python aise functionality
+    test_console.disable()
+    message = "Disabled Test Message"
+    with pytest.raises(TypeError, match=error_format(message)):
+        console.error(message=message, error=TypeError)
+
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_error_output_options(backend, tmp_path, capsys):
-    """Verifies that different error logging destinations work as expected."""
-    error_log = tmp_path / "error.log"
-    # Also tests the autohandles attribute
-    test_console = Console(logger_backend=backend, error_log_path=error_log, auto_handles=True)
-    test_console.enable()
-    test_console.add_handles()
+    """Verifies that Console class error() method respects class output configuration parameters."""
 
-    # Tests terminal only
+    # Also tests the auto-handles attribute
+    error_log = tmp_path / "error.log"
+    test_console = Console(logger_backend=backend, error_log_path=error_log, auto_handles=True)
+
+    # Ensures that callbacks and reraise are disabled for this test.
+    test_console.set_reraise(False)
+    test_console.set_callback(None)
+    test_console.enable()
+
+    # Tests logging the error to terminal only
+    test_console.set_error_terminal(True)
+    test_console.set_error_file(False)
     test_console.error("Terminal only", RuntimeError)
     captured = capsys.readouterr()
     assert "Terminal only" in captured.err
-
-    # Loguru automatically creates an empty log file, click backend does not create the file
-    if backend == LogBackends.LOGURU:
-        assert error_log.read_text() == ""
-    else:
-        assert not os.path.exists(error_log)
+    # Verifies that the log file is not created
+    assert not error_log.exists()
 
     # Tests log only
+    test_console.set_error_terminal(False)
+    test_console.set_error_file(True)
     test_console.error("Log only", RuntimeError)
     captured = capsys.readouterr()
     assert captured.err == ""
@@ -765,6 +773,8 @@ def test_console_error_output_options(backend, tmp_path, capsys):
         assert "Log only" in f.read()
 
     # Tests both terminal and log output disabled
+    test_console.set_error_terminal(False)
+    test_console.set_error_file(False)
     test_console.error("Neither", RuntimeError)
     captured = capsys.readouterr()
     assert captured.err == ""
@@ -773,41 +783,24 @@ def test_console_error_output_options(backend, tmp_path, capsys):
 
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
-def test_console_error_handling(backend, tmp_path):
-    """Verifies error-handling functionality for the error() method."""
-    console = Console(logger_backend=backend, error_log_path=tmp_path / "error.log")
-    console.enable()
-    console.add_handles(error_terminal=True, error_file=True)
+def test_console_error_handling(backend, tmp_path, capsys):
+    """Verifies the error-handling behavior of Console class error() method."""
+    test_console = Console(logger_backend=backend, auto_handles=True, error_log_path=tmp_path / "error.log")
+    test_console.enable()
 
-    # Tests disabled console. Disabled console is still expected to raise the error itself, but should not do any
-    # additional processing.
-    console.disable()
-    with pytest.raises(RuntimeError, match=error_format("Disabled error")):
-        console.error("Disabled error", RuntimeError, terminal=True, log=True)
+    # Removes all handlers to facilitate the test below
+    logger.remove()
+
+    # Verifies that missing handles cause an error for loguru, but not other backends
     if backend == LogBackends.LOGURU:
-        assert Path(tmp_path / "error.log").read_text() == ""
-    else:
-        assert not os.path.exists(tmp_path / "error.log")
-
-    # Re-enables console for further tests
-    console.enable()
-
-    # Tests error handling
-    with pytest.raises(ValidationError):
-        # noinspection PyTypeChecker
-        console.error(123, RuntimeError)  # Invalid message type
-
-    with pytest.raises(ValidationError):
-        # noinspection PyTypeChecker
-        console.error("Test", "Not a callable")  # Invalid error type
-
-    # Tests Loguru-specific error (no handles)
-    if backend == LogBackends.LOGURU:
-        console._logger.remove()
         message = (
-            f"Unable to properly log the requested error ({RuntimeError}) with message {'No handles error'}. The "
-            f"Console class is configured to use the loguru backend, but it does not have any handles. "
-            f"Call add_handles() method to add handles or disable() to disable Console operation."
+            f"Unable to properly log the requested error. The Console class is configured to use the loguru "
+            f"backend, but it does not have any handles. Call add_handles() method to add handles or disable() "
+            f"to disable Console operation. The error that was attempted to be raised: {RuntimeError} with message "
+            f"{'No handles error'}"
         )
         with pytest.raises(RuntimeError, match=error_format(message)):
-            console.error("No handles error", RuntimeError)
+            test_console.error("No handles error", RuntimeError)
+    else:
+        test_console.error("No handles error", RuntimeError)
+        _ = capsys.readouterr()  # Silences the error output

@@ -343,7 +343,7 @@ class Console:
 
         # Internal trackers
         # Ensures logger backend is one of the supported options.
-        if logger_backend not in LogBackends:
+        if not isinstance(logger_backend, LogBackends):
             message = (
                 f"Invalid 'logger_backend' argument encountered when instantiating Console class instance. "
                 f"Expected a member of the LogBackends enumeration, but encountered {logger_backend}."
@@ -959,9 +959,10 @@ class Console:
         if self._backend == LogBackends.LOGURU and self.is_enabled:
             if not self.has_handles:
                 message = (
-                    f"Unable to properly log the requested error ({error}) with message {message}. The Console class "
-                    f"is configured to use the loguru backend, but it does not have any handles. Call add_handles() "
-                    f"method to add handles or disable() to disable Console operation."
+                    f"Unable to properly log the requested error. The Console class is configured to use the loguru "
+                    f"backend, but it does not have any handles. Call add_handles() method to add handles or disable() "
+                    f"to disable Console operation. The error that was attempted to be raised: {error} with message "
+                    f"{message}"
                 )
                 raise RuntimeError(
                     textwrap.fill(

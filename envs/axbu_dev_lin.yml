@@ -148,7 +148,7 @@ dependencies:
   - zstd=1.5.6=ha6fb4c9_0
   - pip:
       - appdirs==1.4.4
-      - ataraxis-automation==3.0.0
+      - ataraxis-automation==3.0.1
       - ataraxis-base-utilities==2.0.1
       - build==1.2.1
       - pyproject-hooks==1.1.0

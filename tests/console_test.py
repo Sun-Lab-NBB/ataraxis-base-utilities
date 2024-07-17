@@ -8,10 +8,10 @@ from pathlib import Path
 import tempfile
 import textwrap
 
-import pytest
 from loguru import logger
+import pytest
 
-from ataraxis_base_utilities import console, Console, LogLevel, LogBackends, LogExtensions
+from ataraxis_base_utilities import Console, LogLevel, LogBackends, LogExtensions, console
 from ataraxis_base_utilities.console import default_callback
 
 
@@ -63,7 +63,7 @@ def test_console_class_initialization(backend, tmp_path) -> None:
         message_file=True,
         error_terminal=False,
         error_file=True,
-        reraise_errors=True
+        reraise_errors=True,
     )
 
     # Asserts all attributes are set correctly
@@ -156,7 +156,7 @@ def test_console_initialization_errors(backend, temp_dir) -> None:
         f"Expected a member of the LogBackends enumeration, but encountered {'invalid_backend'}."
     )
     with pytest.raises(ValueError, match=error_format(message)):
-        Console(logger_backend='invalid_backend')
+        Console(logger_backend="invalid_backend")
 
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
@@ -172,7 +172,7 @@ def test_console_repr(backend) -> None:
         message_terminal=True,
         message_file=False,
         error_terminal=True,
-        error_file=False
+        error_file=False,
     )
 
     # Gets the string representation
@@ -211,7 +211,10 @@ def test_console_add_handles(backend, tmp_path, capsys) -> None:
     message_log = tmp_path / "message.log"
     error_log = tmp_path / "error.log"
     test_console = Console(
-        logger_backend=backend, debug_log_path=debug_log, message_log_path=message_log, error_log_path=error_log,
+        logger_backend=backend,
+        debug_log_path=debug_log,
+        message_log_path=message_log,
+        error_log_path=error_log,
         debug_terminal=True,
         debug_file=True,
         message_terminal=True,
@@ -514,7 +517,10 @@ def test_console_echo(backend, tmp_path, capsys):
     error_log = tmp_path / "error.log"
 
     test_console = Console(
-        logger_backend=backend, debug_log_path=debug_log, message_log_path=message_log, error_log_path=error_log,
+        logger_backend=backend,
+        debug_log_path=debug_log,
+        message_log_path=message_log,
+        error_log_path=error_log,
         debug_terminal=True,
         debug_file=True,
         message_terminal=True,
@@ -690,6 +696,7 @@ def test_console_error(backend, tmp_path, capsys):
     # Tests raising custom errors
     class CustomError(Exception):
         pass
+
     test_console.set_reraise(True)
     with pytest.raises(CustomError):
         test_console.error(message="Custom error", error=CustomError)
@@ -710,9 +717,7 @@ def test_console_error(backend, tmp_path, capsys):
         # noinspection PyTypeChecker
         test_console.set_callback(callback_func)
         test_console.set_reraise(False)
-        test_console.error(
-            "Callback error", error=ValueError
-        )
+        test_console.error("Callback error", error=ValueError)
         captured = capsys.readouterr()
         assert "Callback error" in captured.err
         assert "Callback executed" in captured.err

@@ -301,7 +301,7 @@ try:
 except RuntimeError:
     print("You will not see this.")
 
-# By dfault, console will not re-raise the logged error as a Python error.
+# By default, console will not re-raise the logged error as a Python error.
 assert not console.reraise
 
 # However, if your use case needs this functionality, you can always enable it:
@@ -388,9 +388,9 @@ This section only applies to Console using 'loguru' backend, which includes the 
 relies on its 'logger' variable to be provided with handles that determine how to process messages. Similarly, Console
 comes with add_handles() method that can be called to replace active handles with console-specific handles. Note, since
 'logger' is shared across all libraries and modules, editing handles can interfere with any other class that uses 
-logger. Default console is written with the assumption that nothing else uses logger and, by dfault, removes all active
-handles before adding its custom handles. Not only this, but it also calls add_handles() automatically when initialized
-or when any of its attributes are edited.
+logger. Default console is written with the assumption that nothing else uses logger and, by default, removes all active
+handles before adding its custom handles before adding its custom handles. Not only this, but it also calls 
+add_handles() automatically when initialized or when any of its attributes are edited.
 ```
 from ataraxis_base_utilities import Console, LogBackends, LogExtensions
 
@@ -492,7 +492,7 @@ All environments used during development are exported as .yml files and as spec.
 The environment snapshots were taken on each of the three explicitly supported OS families: Windows 11, OSx (M1) 14.5
 and Linux Ubuntu 22.04 LTS.
 
-**Note!** Since the OSx environment was built against an M1 (Apple Silicon) platform and may not work on Intel-based 
+**Note!** Since the OSx environment was built for an M1 (Apple Silicon) platform, it may not work on Intel-based 
 Apple devices.
 
 To install the development environment for your OS:

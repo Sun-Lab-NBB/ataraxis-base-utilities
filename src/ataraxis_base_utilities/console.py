@@ -651,7 +651,7 @@ class Console:
         """
         if self._backend == LogBackends.LOGURU:
             # noinspection PyProtectedMember,PyUnresolvedReferences
-            return len(logger._core.handlers) > 0
+            return len(logger._core.handlers) > 0  # type: ignore
         else:
             return False
 
@@ -737,7 +737,7 @@ class Console:
         self._callback = callback
 
     @property
-    def reraise(self):
+    def reraise(self) -> bool:
         """Returns True if Console.error() method should reraise logged error messages."""
         return self._reraise
 
@@ -973,7 +973,7 @@ class Console:
                     )
                 )
 
-            with logger.catch(reraise=self._reraise, onerror=self._callback):
+            with logger.catch(reraise=self._reraise, onerror=self._callback):  # type: ignore
                 # noinspection PyCallingNonCallable
                 raise error(formatted_message)
 

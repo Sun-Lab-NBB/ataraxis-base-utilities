@@ -147,14 +147,11 @@ dependencies:
   - zstandard=0.23.0=py312h3483029_0
   - zstd=1.5.6=ha6fb4c9_0
   - pip:
-      - annotated-types==0.7.0
       - appdirs==1.4.4
       - ataraxis-automation==3.0.0
       - ataraxis-base-utilities==2.0.1
       - build==1.2.1
-      - pydantic==2.8.2
-      - pydantic-core==2.20.1
       - pyproject-hooks==1.1.0
       - pyyaml==6.0.1
       - tox-uv==1.9.1
-      - uv==0.2.24
+      - uv==0.2.26

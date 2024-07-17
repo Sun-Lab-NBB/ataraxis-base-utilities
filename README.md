@@ -4,8 +4,8 @@ Python library that provides a minimalistic set of shared utility functions used
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-base-utilities)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-base-utilities)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](ht1tps://github.com/astral-sh/uv)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://tinyurl.com/uvbadge)](https://github.com/astral-sh/uv)
+[![Ruff](https://tinyurl.com/ruffbadge)](https://github.com/astral-sh/ruff)
 ![type-checked: mypy](https://img.shields.io/badge/type--checked-mypy-blue?style=flat-square&logo=python)
 ![PyPI - License](https://img.shields.io/pypi/l/ataraxis-base-utilities)
 ![PyPI - Status](https://img.shields.io/pypi/status/ataraxis-base-utilities)
@@ -79,116 +79,344 @@ Use the following command to install the library using Conda or Mamba: ```conda 
 ___
 
 ## Usage
+This section is broken into subsections for each exposed utility class. For each, it progresses from a minimalistic 
+'quickstart' example to detailed notes on nuanced class functionality.
 
 ### Console
 The Console class provides message and error display (via terminal) and logging (to files) functionality. Primarily, 
-this is realized through the [loguru](https://github.com/Delgan/loguru) backend. It is highly advised checking loguru 
+this is realized through the [loguru](https://github.com/Delgan/loguru) backend. It is highly advised to check loguru 
 documentation to understand how Console functions under-the-hood, although this is not strictly required. As a secondary
 backend, the class uses [click](https://click.palletsprojects.com/en/8.1.x/), so it may be beneficial to review its 
 documentation if loguru backend is not appropriate for your specific use case.
 
-This is a minimal example of how to use the class, assuming you want to use default parameters:
+#### Quickstart
+Most class functionality revolves around 2 methods: ```echo()``` and ```error()```. To make adoption as frictionless
+as possible, we offer a preconfigured class instance exposed through 'console' class variable that can be used 'as-is'
+and shared between multiple modules:
 ```
-# Import 'console' and helper classes
-from ataraxis_base_utilities import console, LogLevel, LogExtensions
-from pathlib import Path
+from ataraxis_base_utilities import console
 
-# 'console' is a global variable that functions similar to Loguru 'logger'. It is ready to be used right after import.
-
-# When imported, console is DISABLED. It will not print anything and will raise errors just like python does.
-
-# These two methods configure (add handles) to the console and enable it to print and log text and error messages.
-# To understand the purpose of 'add_handles()' step, review 'loguru' documentation and the API / source code for the 
-# Console class. Generally, it configures 'sinks' that determine how 'echo()' and 'error()' generated messages are 
-# processed by the loguru backend.
-console.add_handles()
+# The class is disabled by default, so it needs to be enabled to see method outputs. You do not need to have it enabled
+# to add error() or echo() calls to your code though.
 console.enable()
 
-# This functions just like 'print' does. This sends the message using 'Info' log level. See Loguru documentation for 
-# details on log levels.
-console.echo('Message to Print')
+# Use this instead of print()!
+console.echo("This is essentially a better 'print'.")
 
-# This functions just like 'raise RuntimeError()' does. Use this in place of typical exceptions to allow logging them 
-# when console is enabled.
-console.error('Error message')
-
-# This shows how you can chose what error is raised.
-console.error('Error message', error=ValueError)
-
-# By default, console variable is not configured to save messages and errors to log files. To add log file support, 
-# follow these steps:
-
-# First, provide it with valid log file path:
-extension = LogExtensions.LOG
-message_log = Path(f"my_log{extension}")
-console.set_message_log_path(message_log)
-
-# Then reconfigure the console to allow logging messages. Any subsequent console echo() call will both print the 
-# message to the terminal and log it to the log file.
-console.add_handles(message_file=True)
+# Use this instead of 'raise Exception'!
+console.error("This is essentially a better 'raise'.")
 ```
 
-This is a more detailed example that also showcases some of the configuration parameters used by Console methods and 
-de novo class instantiation:
+#### Echo
+Console.echo() method can be thought of as a better print() with some additional functionality. For example, you can
+provide the desired message 'level' to finely control how it will be processed:
 ```
-# First, import the console class from the library. It also helps to include helper enumerations.
-from ataraxis_base_utilities import Console, LogBackends, LogLevel
+from ataraxis_base_utilities import console, LogLevel
+console.enable()
 
-# Configure Console to write messages to files in addition to terminals.
-debug_log: str = "debug.json"
-error_log_path: str = "error.txt"
-message_log_path: str = "message.log"
-file_console: Console = Console(
-    debug_log_path=debug_log, error_log_path=error_log_path, message_log_path=message_log_path
+# By default, console is configured to NOT print debug messages. You will not see anything after this call
+console.echo(message='Debug', level=LogLevel.DEBUG)
+
+# But you will see this information message
+console.echo(message='Info', level=LogLevel.INFO)
+
+# Or this error message
+console.echo(message='Error', level=LogLevel.ERROR)
+
+# Disabled console will not print any messages at all.
+console.disable()
+status = console.echo(message='Info', level=LogLevel.INFO)
+
+# To help you track if console is not printing due to being disabled, it returns 'False' when you call echo() while the
+# class is disabled.
+assert status is False
+
+# However, if lack of printing is due to how console is configured and not it being disabled, the status will be set to
+# 'True'.
+console.enable()
+status = console.echo(message='Debug', level=LogLevel.DEBUG)
+assert status
+```
+
+#### Error
+Console.error() method can be thought of as a more nuanced 'raise Exception' directive. Most of the additional 
+functionality of this method comes from Console class configuration, and in its most basic form, this is just a
+wrapper around 'raise':
+```
+from ataraxis_base_utilities import console
+console.enable()
+
+# By default, console uses 'default callback' to abort the active runtime after raising an error. Since this will
+# interrupt this example, this needs to be disabled. See 'error runtime control' section for more details.
+console.set_callback(None)
+
+# You can specify the exception to be raised by providing it as an 'error' argument. By default, this argument is
+# set to RuntimeError.
+console.error(message="TypeError", error=TypeError)
+
+
+# This works for custom exceptions as well!
+class CustomError(Exception):
+    pass
+
+
+console.error(message="CustomError", error=CustomError)
+
+
+# When console is disabled, error() behaves identically to 'raise' directive. This way, your errors will always be
+# raised, regardless of whether console is enabled or not.
+console.disable()
+console.error(message="ValueError", error=ValueError)
+```
+
+#### Format Message
+All console methods format input messages to fit the default width-limit of 120 characters. This was chosen as it is 
+both likely to fit into any modern terminal and gives us a little more space than the default legacy '80' limit used by
+many projects. The formatting takes into consideration that 'loguru' backend adds some ID information to the beginning 
+of each method, so the text should look good regardless of the backend used. In the case that you want to use console
+as a formatter, rather than a message processor, you can use Console.format_message() method:
+```
+from ataraxis_base_utilities import console
+
+# Let's use this test message
+message = (
+    "This is a very long message that exceeds our default limit of 120 characters. As such, it needs to be wrapped to "
+    "appear correctly when printed to terminal (or saved to a log file)."
 )
 
-# Add handles (Only for LOGURU backend). Make sure file handles are enabled.
-file_console.add_handles(remove_existing_handles=True, debug_file=True, message_file=True, error_file=True)
+# This shows how the message looks without formatting
+print(message)
 
-# Next, the console has to be enabled. By default, it is disabled and does not process any echo() or error() calls.
-file_console.enable()
+# This formats the message according to our standards. Note how this works regardless of whether console is enabled or 
+# not!
+formatted_message = console.format_message(message)
 
-# Attempts to print debug message, which will go to file, but not terminal (terminal handle for debug was not added).
-message: str = "Hi there! I am debug."
-file_console.echo(message=message, level=LogLevel.DEBUG, terminal=True, log=True)
-
-# Prints to terminal only, warnings is at the 'message' level.
-message = "Hi there! I am warning."
-file_console.echo(message=message, level=LogLevel.WARNING, terminal=True, log=False)
-
-# Raises an error, logs it, but does not break runtime.
-message = "Oh no! I am error."
-file_console.error(message=message, error=ValueError, callback=None, reraise=False, terminal=True, log=True)
-
-# Disabling the console allows calling methods, but they do nothing.
-file_console.disable()
-
-message = "Too bad you will never see me!"
-# echo returns False when console is disabled, so you can always check what is going on if you do not see anything!
-assert not file_console.echo(message=message, level=LogLevel.ERROR, terminal=True, log=False)
-
-# Click is available as an alternative backend.
-click_console = Console(logger_backend=LogBackends.CLICK)
-
-# Click does not use handles, so console just needs to be enabled.
-click_console.enable()
-
-# Echo works very similar to loguru, but log levels do not do much.
-message = "I may not be much, but I am honest work!"
-click_console.echo(message, log=False)
-
-# Not super important, but you can also just format strings using format_message().
-message = ("This is a very long message. So long in fact, that it exceeds the default line limit of Console class. "
-           "format_message() will automatically wrap the message as needed to fit into the width-limit.")
-print(click_console.format_message(message=message, loguru=False))
-
-# Also, click does not support callback functionality for errors or detailed traceback, like loguru does, so it is
-# often better to log and reraise any errors when using click.
-message = "I may be excessive, but so what?"
-click_console.error(message, ValueError, reraise=True, terminal=True, log=False)
+# See how it compares to the original message!
+print(formatted_message)
 ```
 
-### Additional notes on usage:
+#### Configuring console: enable / disable
+By default, console starts 'disabled.' You can enable or disable it at any time! When using console to add functionality
+to libraries, do not enable() the console. This way, you both add console functionality to your library and allow the 
+end-user to decide how much output they want to see and in what format.
+```
+from ataraxis_base_utilities import console, LogLevel
+
+# Most basically, the console can be enabled() or disabled() any time using the appropriate methods:
+console.enable()
+console.disable()
+
+# To check the current console status, you can use the getter method:
+assert not console.is_enabled
+```
+
+#### Configuring console: output control
+By default, console is configured to print information and error messages to the terminal. However, you can 
+flexibly set what kind of messages it processes and where they go. To do so, you can use the extensive set of setter and
+getter methods.
+```
+from ataraxis_base_utilities import console, LogLevel
+console.enable()
+
+# Consider debug message printing, which is disabled by default:
+console.echo('Debug', level=LogLevel.DEBUG)
+
+# If we enable debug printing, the message will show up in terminal as expected:
+console.set_debug_terminal(True)
+console.echo('Debug', level=LogLevel.DEBUG)
+
+# To verify if a particular output format for a message type is enabled, you can use the getter method:
+assert console.debug_terminal
+assert not console.error_file
+
+# The class allows you to flexibly configure terminal-printing and file-logging for Debug-, Info to Warning and Error+
+# messages. The default 'console' configuration can be obtained by using the following setter methods and arguments:
+console.set_debug_terminal(False)
+console.set_debug_file(False)
+console.set_message_terminal(True)
+console.set_message_file(False)
+console.set_error_terminal(True)
+console.set_error_file(False)
+
+# Note, 'getter' properties are named identical to setter methods, minus the 'set_' part:
+assert not console.debug_terminal
+assert not console.debug_file
+assert console.message_terminal
+assert not console.message_file
+assert console.error_terminal
+assert not console.error_file
+```
+
+#### Configuring console: log paths
+For a message to be written to a log file, it is not enough to just 'enable' that output type. Additionally, you need 
+to provide console with a path to the log file to write to and, if it does not exist, create. This is done through a 
+separate set of setter and getter methods:
+```
+from ataraxis_base_utilities import console, LogExtensions
+from pathlib import Path
+
+# By default, the console is not provided with a path to the message log file and does not support writing messages to
+# log file.
+assert console.message_log_path is None
+
+# You can provide it with a custom log file to enable logging functionality:
+example_path = f"example{LogExtensions.LOG}"
+console.set_message_log_path(Path(example_path))
+assert console.message_log_path == Path(example_path)
+
+# Note that the class supports only a set of file-extensions. For your convenience, they are available from
+# LogExtensions class:
+log_file = Path(f"example{LogExtensions.LOG}")
+text_file = Path(f"example{LogExtensions.TXT}")
+json_file = Path(f"example{LogExtensions.JSON}")
+
+# As with other class configuration attributes, you can flexibly configure log files for each of the supported message
+# groups:
+console.set_message_log_path(log_file)
+console.set_debug_log_path(text_file)
+console.set_error_log_path(json_file)
+
+# You can retrieve the used log file path at any time using an appropriate getter property:
+log_file = console.message_log_path
+text_file = console.debug_log_path
+json_file = console.error_log_path
+```
+
+#### Configuring console: error runtime control
+Console.error() significantly expands your ability to control how errors are handled. Specifically, its behavior can 
+range from generating default Python tracebacks to redirecting errors to log files to executing custom error callback
+functions. Note, most of this functionality is only supported by our default 'loguru' backend.
+```
+from ataraxis_base_utilities import console
+from ataraxis_base_utilities.console import default_callback
+console.enable()
+
+# By default, the console is configured to call sys.exit() as a callback to prevent providing two error traces: one from
+# loguru and the other from Python. To prevent this behavior, set console callback to None:
+console.set_callback(None)
+
+# This prints the error to terminal, but does not abort runtime.
+try:
+    console.error("Test error", RuntimeError)
+except RuntimeError:
+    print("You will not see this.")
+
+# By default, console will not re-raise the logged error as a Python error.
+assert not console.reraise
+
+# However, if your use case needs this functionality, you can always enable it:
+console.set_reraise(True)
+
+try:
+    console.error("Test error", ValueError)
+except ValueError:
+    print("The error was re-raised as expected.")
+
+
+# WARNING! Callbacks, when provided, are executed before re-raising the error. If callback calls runtime-breaking
+# functions, such as sys.exit(), it will interfere with error re-raising.
+def benign_callback():
+    print('I do not cause a runtime error.')
+
+
+console.set_callback(benign_callback)
+try:
+    console.error("Test error", TypeError)
+except TypeError:
+    print("Benign callback did not interfere with raising the error.")
+
+# Default callback will, however, clash with 'reraise' functionality:
+console.set_callback(default_callback)
+try:
+    # This will abort the runtime through 'default_callback' calling sys.exit().
+    console.error("Test error", KeyError)
+except KeyError:
+    print("This will not be displayed.")
+```
+
+#### Custom Console instances:
+While this class is designed ot be used through the 'console' variable, you can also instantiate and use a custom 
+Console class instance. Unlike 'console' variable, this class will not be shared across all modules and libraries, 
+potentially allowing to isolate its configuration from the rest of your project. Note, since 'LOGURU' backend uses the 
+shared 'logger,' instantiating a new CConsole class does not automatically guarantee isolation!
+```
+from ataraxis_base_utilities import Console, LogBackends, LogExtensions
+
+# The most important advantage of using the custom console is the ability to specify the backend other than the default
+# 'LOGURU' backend. # All supported backends are available through the LogBackends enumeration.
+click_console = Console(logger_backend=LogBackends.CLICK)
+
+# Additionally, you can customize the formatting applied to messages:
+format_console = Console(line_width=200, break_long_words=True, break_on_hyphens=True, use_color=False)
+
+# Finally, you can make console safer by overriding the 'auto_handles' attribute to prevent 'LOGURU' consoles from 
+# automatically editing the shared 'logger' instance handles. To learn more about handles, see 'add_handles()' section.
+loguru_console = Console(logger_backend=LogBackends.LOGURU, auto_handles=False)
+
+
+# All attributes discussed in previous sections can be set by initialization arguments to the Console class:
+def custom_callback():
+    """Custom callback function"""
+    pass
+
+
+debug_log_path = f"debug{LogExtensions.LOG}"
+
+example_console = Console(
+        logger_backend=LogBackends.LOGURU,
+        debug_log_path=debug_log_path,
+        message_log_path=None,
+        error_log_path=None,
+        line_width=120,
+        error_callback=custom_callback,
+        auto_handles=True,
+        break_long_words=True,
+        break_on_hyphens=True,
+        use_color=False,
+        debug_terminal=True,
+        debug_file=True,
+        message_terminal=False,
+        message_file=True,
+        error_terminal=False,
+        error_file=True,
+        reraise_errors=True
+    )
+```
+
+#### Loguru Console: add_handles()
+This section only applies to Console using 'loguru' backend, which includes the default 'console' variable. Loguru 
+relies on its 'logger' variable to be provided with handles that determine how to process messages. Similarly, Console
+comes with add_handles() method that can be called to replace active handles with console-specific handles. Note, since
+'logger' is shared across all libraries and modules, editing handles can interfere with any other class that uses 
+logger. Default console is written with the assumption that nothing else uses logger and, by default, removes all active
+handles before adding its custom handles before adding its custom handles. Not only this, but it also calls 
+add_handles() automatically when initialized or when any of its attributes are edited.
+```
+from ataraxis_base_utilities import Console, LogBackends, LogExtensions
+
+# By default, uses loguru backend
+console = Console(auto_handles=False)
+console.enable()
+
+# Consoles that are not initialized with auto_handles=True require manually calling add_handles() method before calling
+# echo() or error() methods.
+console.add_handles(remove_existing_handles=False)  # This call will NOT remove default handles
+
+# This should produce two messages: one using the default 'console' variable handle that replaced 'logger' handle and
+# another using the custom handle we added with add_handles() call.
+console.echo("Hello, World!")
+
+# To reset all handles, we cna use the default add_handles() argument:
+console.add_handles()
+console.echo("Now there is only one")
+
+# Another important feature only available through 'add_handles' is the ability to 'enqueue' messages. This helps with
+# using console from multiple processes by passing all messages through a shared processing queue.
+console.add_handles(enqueue=True)
+console.echo("The API remains the same though!")
+```
+
+#### Additional notes on usage:
 Generally, Console class is designed to be used across many libraries that may also be dependent on each other. 
 Therefore, it should be used similar to how it is advised to use Loguru for logging: when using Console in a library, 
 do not call add_handles() or enable() methods. The only exception to this rule is when running in interactive mode 
@@ -264,7 +492,7 @@ All environments used during development are exported as .yml files and as spec.
 The environment snapshots were taken on each of the three explicitly supported OS families: Windows 11, OSx (M1) 14.5
 and Linux Ubuntu 22.04 LTS.
 
-**Note!** Since the OSx environment was built against an M1 (Apple Silicon) platform and may not work on Intel-based 
+**Note!** Since the OSx environment was built for an M1 (Apple Silicon) platform, it may not work on Intel-based 
 Apple devices.
 
 To install the development environment for your OS:
@@ -315,5 +543,8 @@ ___
 
 - All Sun Lab [members](https://neuroai.github.io/sunlab/people) for providing the inspiration and comments during the
   development of this library.
+- [loguru](https://github.com/Delgan/loguru) and [click](https://github.com/pallets/click/) projects for providing all
+  low-level functionality for this project.
+- The creators of all other projects used in our development automation pipelines [see pyproject.toml](pyproject.toml).
 
 ---

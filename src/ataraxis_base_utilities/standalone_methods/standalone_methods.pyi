@@ -1,9 +1,13 @@
-import numpy as np
-from ..console import console as console
-from numpy.typing import NDArray
-from typing import Any, Generator, Literal
+from typing import Any, Literal, Generator
 
-def ensure_list(input_item: str | int | float | bool | None | np.generic | NDArray[Any] | tuple[Any, ...] | list[Any] | set[Any]) -> list[Any]:
+import numpy as np
+from numpy.typing import NDArray
+
+from ..console import console as console
+
+def ensure_list(
+    input_item: str | int | float | bool | None | np.generic | NDArray[Any] | tuple[Any, ...] | list[Any] | set[Any],
+) -> list[Any]:
     """Ensures that the input object is returned as a list.
 
     If the object is not already a list, attempts to convert it into a list. If the object is a list, returns the
@@ -28,7 +32,10 @@ def ensure_list(input_item: str | int | float | bool | None | np.generic | NDArr
     Raises:
         TypeError: If the input object cannot be converted or wrapped into a list.
     """
-def chunk_iterable(iterable: NDArray[Any] | tuple[Any] | list[Any], chunk_size: int) -> Generator[tuple[Any, ...] | NDArray[Any], None, None]:
+
+def chunk_iterable(
+    iterable: NDArray[Any] | tuple[Any] | list[Any], chunk_size: int
+) -> Generator[tuple[Any, ...] | NDArray[Any], None, None]:
     """Yields successive chunk_size-sized chunks from the input iterable or NumPy array.
 
     This function supports lists, tuples, and NumPy arrays, including multidimensional arrays. For NumPy arrays, it
@@ -49,7 +56,12 @@ def chunk_iterable(iterable: NDArray[Any] | tuple[Any] | list[Any], chunk_size: 
     Returns:
         Chunks of the input iterable (as a tuple) or NumPy array, containing at most chunk_size elements.
     """
-def check_condition(checked_value: int | float | str | bool | tuple[Any] | list[Any] | NDArray[Any] | np.number[Any], condition_value: int | float | str | bool | np.number[Any] | np.bool_, condition_operator: Literal['>', '<', '>=', '<=', '==', '!=']) -> bool | np.bool_ | NDArray[np.bool_] | tuple[bool, ...]:
+
+def check_condition(
+    checked_value: int | float | str | bool | tuple[Any] | list[Any] | NDArray[Any] | np.number[Any],
+    condition_value: int | float | str | bool | np.number[Any] | np.bool_,
+    condition_operator: Literal[">", "<", ">=", "<=", "==", "!="],
+) -> bool | np.bool_ | NDArray[np.bool_] | tuple[bool, ...]:
     """Checks the input value against the condition value, using requested condition operator.
 
     Can take tuples, lists, and numpy arrays as checked_value, in which case the condition_value is applied
@@ -73,8 +85,9 @@ def check_condition(checked_value: int | float | str | bool | tuple[Any] | list[
         KeyError: If an unsupported operator symbol is provided.
         TypeError: If checked_value is not of a supported type.
     """
+
 def compare_nested_tuples(x: tuple[Any, ...], y: tuple[Any, ...]) -> bool:
-    '''Compares two input one-level nested tuples and returns True if all elements in one tuple are equal to the other.
+    """Compares two input one-level nested tuples and returns True if all elements in one tuple are equal to the other.
 
     This function is primarily designed to be used for assertion testing, in place of the numpy array_equal function
     whenever the two compared tuples are not immediately convertible to a numpy 2D array. This is true for tuples that
@@ -96,4 +109,4 @@ def compare_nested_tuples(x: tuple[Any, ...], y: tuple[Any, ...]) -> bool:
 
     Raises:
         TypeError: If x or y is not a tuple
-    '''
+    """

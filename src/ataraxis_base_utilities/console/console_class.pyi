@@ -1,9 +1,10 @@
-from _typeshed import Incomplete
-from collections.abc import Callable
-from dataclasses import dataclass
 from enum import Enum
-from pathlib import Path
 from typing import Any, Literal
+from pathlib import Path
+from dataclasses import dataclass
+from collections.abc import Callable
+
+from _typeshed import Incomplete
 
 def default_callback(__error: str | int | None = None, /) -> Any:
     """Calls sys.exit() with a minimal explanation message.
@@ -24,6 +25,7 @@ class LogLevel(Enum):
     messages, depending on the configuration of the Console class loguru backend. For example, the end-user can disable
     the handles for 'DEBUG' level messages and suppress any message at or below DEBUG level.
     """
+
     DEBUG: str
     INFO: str
     SUCCESS: str
@@ -41,12 +43,13 @@ class LogBackends(Enum):
     is highly advised to use the default loguru backend as it provides a more robust feature set, compared to
     'click' backend.
     """
+
     LOGURU: str
     CLICK: str
 
 @dataclass
 class LogExtensions:
-    '''Maps valid file-extension options that can be used by log file paths provided to the Console class to
+    """Maps valid file-extension options that can be used by log file paths provided to the Console class to
     programmatically addressable variables.
 
     Use this class to add valid extensions to the log-file paths used as input arguments when initializing new
@@ -55,7 +58,8 @@ class LogExtensions:
     File extensions are used to determine the log file format. Extensions exposed through this class already contain
     the \'.\' prefix and should be appended to plain file names. For example, to add .log extension, you can use:
     f"file_name{LogExtensions.LOG}"
-    '''
+    """
+
     LOG: str = ...
     TXT: str = ...
     JSON: str = ...
@@ -155,6 +159,7 @@ class Console:
         ValueError: If any of the provided log file paths is not valid. If the input line_width number is not valid.
             If the input logger backend is not one of the supported backends.
     """
+
     _line_width: Incomplete
     _break_long_words: Incomplete
     _break_on_hyphens: Incomplete
@@ -174,7 +179,27 @@ class Console:
     _callback: Incomplete
     _auto_handles: Incomplete
     _is_enabled: bool
-    def __init__(self, logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = ..., debug_log_path: Path | str | None = None, message_log_path: Path | str | None = None, error_log_path: Path | str | None = None, line_width: int = 120, error_callback: Callable[[], Any] | None = ..., *, auto_handles: bool = False, break_long_words: bool = False, break_on_hyphens: bool = False, use_color: bool = True, debug_terminal: bool = False, debug_file: bool = False, message_terminal: bool = True, message_file: bool = False, error_terminal: bool = True, error_file: bool = False, reraise_errors: bool = False) -> None: ...
+    def __init__(
+        self,
+        logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = ...,
+        debug_log_path: Path | str | None = None,
+        message_log_path: Path | str | None = None,
+        error_log_path: Path | str | None = None,
+        line_width: int = 120,
+        error_callback: Callable[[], Any] | None = ...,
+        *,
+        auto_handles: bool = False,
+        break_long_words: bool = False,
+        break_on_hyphens: bool = False,
+        use_color: bool = True,
+        debug_terminal: bool = False,
+        debug_file: bool = False,
+        message_terminal: bool = True,
+        message_file: bool = False,
+        error_terminal: bool = True,
+        error_file: bool = False,
+        reraise_errors: bool = False,
+    ) -> None: ...
     def __repr__(self) -> str:
         """Returns a string representation of the class instance."""
     def add_handles(self, *, remove_existing_handles: bool = True, enqueue: bool = False) -> None:

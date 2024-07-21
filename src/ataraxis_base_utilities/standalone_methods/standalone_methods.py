@@ -1,5 +1,5 @@
 """This module contains miscellaneous methods that either abstract away common operations to reduce boilerplate code or
- provide functionality not commonly available from popular Python libraries.
+provide functionality not commonly available from popular Python libraries.
 
 Methods from this module largely belong to two groups. The first group is for 'convenience' methods. These methods
 typically abstract away template code that is readily available from Python or common libraries (a good example is the

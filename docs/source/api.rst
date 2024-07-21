@@ -3,7 +3,14 @@
 
 Console Module
 ==============
-.. automodule:: ataraxis_base_utilities.console
+.. automodule:: ataraxis_base_utilities.console.console_class
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Standalone Methods Module
+=========================
+.. automodule:: ataraxis_base_utilities.standalone_methods.standalone_methods
    :members:
    :undoc-members:
    :show-inheritance:

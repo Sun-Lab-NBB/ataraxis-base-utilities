@@ -11,8 +11,7 @@ import textwrap
 from loguru import logger
 import pytest
 
-from ataraxis_base_utilities import Console, LogLevel, LogBackends, LogExtensions, console
-from ataraxis_base_utilities.console import default_callback
+from ataraxis_base_utilities import Console, LogLevel, LogBackends, LogExtensions, console, default_callback
 
 
 @pytest.fixture

@@ -1,22 +1,8 @@
 """This library exposes a minimalistic set of shared utility classes and functions used to support other projects.
 
-This library has a very broad scope: it centralizes widely shared functionality used across multiple
-Sun Lab projects. Any class or function reused by more than 5 other projects becomes a candidate for inclusion into
-this library.
-
-Currently, the library provides the following functionality:
-- Console: A class that provides message and error printing and logging functionality.
-- ensure_list: A function that ensures that an input is a list, converting a wide range of non-list inputs into python
-list types if necessary.
-- compare_nested_tuples: A function that compares two-dimensional nested tuples, handling cases not suitable for
-numpy 'array_equal' method.
-- chunk_iterable: A function that chunks the input iterable into equal-sized chunk of the requested size.
-- check_condition: A function that evaluates whether two input values satisfy a certain logical condition, uch as
-equality.
-
-While this library is explicitly configured to work with other Sun Lab projects, it can be adapted to work for non-lab
-projects. Specifically, this would likely require changing default argument values used by functions exposed through
-this library.
+See https://github.com/Sun-Lab-NBB/ataraxis-base-utilities for more details.
+API documentation: https://ataraxis-base-utilities-api-docs.netlify.app/
+Author: Ivan Kondratyev (Inkaros)
 """
 
 from .console import Console, LogLevel, LogBackends, LogExtensions, default_callback

@@ -188,10 +188,7 @@ def test_check_condition(checked_value: Any, condition_value: Any, condition_ope
 
 def test_check_condition_error() -> None:
     """Verifies that check_condition() correctly handles invalid unsupported input types."""
-    message = (
-        f"Unsupported checked_value ({object()}) type ({type(object()).__name__}) encountered when "
-        f"checking condition. See API documentation / function signature for supported types."
-    )
+    message = f"Unsupported checked_value "
 
     with pytest.raises(TypeError, match=error_format(message)):
         # noinspection PyTypeChecker

@@ -79,8 +79,9 @@ Use the following command to install the library using Conda or Mamba: ```conda 
 ___
 
 ## Usage
-This section is broken into subsections for each exposed utility class. For each, it progresses from a minimalistic 
-'quickstart' example to detailed notes on nuanced class functionality.
+This section is broken into subsections for each exposed utility class or module. For each, it progresses from a 
+minimalistic example and / or 'quickstart' to detailed notes on nuanced class functionality 
+(if the class has such functionality).
 
 ### Console
 The Console class provides message and error display (via terminal) and logging (to files) functionality. Primarily, 
@@ -287,8 +288,7 @@ Console.error() significantly expands your ability to control how errors are han
 range from generating default Python tracebacks to redirecting errors to log files to executing custom error callback
 functions. Note, most of this functionality is only supported by our default 'loguru' backend.
 ```
-from ataraxis_base_utilities import console
-from ataraxis_base_utilities.console import default_callback
+from ataraxis_base_utilities import console, default_callback
 console.enable()
 
 # By default, the console is configured to call sys.exit() as a callback to prevent providing two error traces: one from
@@ -429,6 +429,105 @@ library. Whenever your library is imported, the end-user can then enable() and a
 variable, which will automatically work for all console-based statements across all libraries. This way, the exact 
 configuration is left up to end-user, but your code will still raise errors and can be debugged using custom 
 logging configurations.
+
+### Standalone Methods
+The standalone methods are a broad collection of utility functions that either abstract away the boilerplate code for 
+common data manipulations or provide novel functionality not commonly available through popular Python libraries used 
+by our projects. Generally, these methods are straightforward to use and do not require detailed explanation:
+
+#### Ensure list
+
+As the name implies, this method ensures that the input is a Python list. If the input is not a Python list, the method
+converts it into a list. If conversion fails, the method raises a ValueError.
+
+```
+import numpy as np
+from ataraxis_base_utilities import ensure_list
+
+# Ensures and, if necessary, converts inputs to the Python list type:
+out_list = ensure_list(input_item=(1, 2, 3, 4))
+assert isinstance(out_list, list)
+assert out_list == [1, 2, 3, 4]
+
+# It works for a wide range of inputs numpy arrays...
+numpy_array = np.array([1, 2, 3, 4])
+out_list = ensure_list(input_item=numpy_array)
+assert isinstance(out_list, list)
+assert out_list == [1, 2, 3, 4]
+
+# And scalars
+out_list = ensure_list(input_item=1)
+assert isinstance(out_list, list)
+assert out_list == [1]
+```
+
+#### Compare nested tuples
+This method is designed to compliment numpy 'array_equal' method to provide a way of comparing two-dimensional (nested)
+tuples. The method allows comparing Python tuple with multiple element datatypes and uneven sub-tuple topologies: the 
+functionality that is not present in the array_equal() method.
+
+```
+from ataraxis_base_utilities import compare_nested_tuples
+
+# The method works for different sub-tuple shapes and element datatypes
+tuple_1 = (1, 2, ("text", True))
+tuple_2 = (1, 2, ("text", True))
+assert compare_nested_tuples(x=tuple_1, y=tuple_2)
+
+# The method takes element datatype into consideration when comparing tuples!
+tuple_2 = (1, '2', ("text", True))
+assert not compare_nested_tuples(x=tuple_1, y=tuple_2)
+```
+
+#### Chunk iterable
+This method converts input iterables into chunks of the requested size. Primarily, this is helpful when load-balancing 
+data for parallel processing and similar operations.
+```
+
+import numpy as np
+from ataraxis_base_utilities import chunk_iterable
+
+# Note, while the method tries to produce equally sized chunks, the final chunk may contain fewer items if the input
+# iterable is not evenly divisible by chunk size. The method returns a Generator that can be used to yield chunks:
+x = [1, 2, 3, 4, 5, 6, 7]
+chunk_generator = chunk_iterable(iterable=x, chunk_size=2)
+
+expected_chunks = ((1, 2), (3, 4), (5, 6), (7,))
+for num, chunk in enumerate(chunk_generator):
+    assert expected_chunks[num] == chunk
+
+# The method works for both python iterables and one-dimensional numpy arrays. For numpy inputs, it returns numpy
+# arrays as outputs:
+numpy_x = np.array(x)
+chunk_generator = chunk_iterable(iterable=numpy_x, chunk_size=3)
+
+expected_chunks = (np.array([1, 2, 3]), np.array([4, 5, 6]), np.array([7]))
+for num, chunk in enumerate(chunk_generator):
+    assert np.array_equal(expected_chunks[num], chunk)
+```
+
+#### Check condition
+This method provides a generalized logic comparison interface that functions similar to using the logical operators, 
+such as '==' directly. The main purpose of this method is to provide an interface that behaves similarly regardless of 
+input. This is useful in cases such as verifying the output of a function that can return multiple different datatypes.
+
+```
+import numpy as np
+from ataraxis_base_utilities import check_condition
+
+# The method can be considered a wrapper around common logical operators used for value comparison:
+assert check_condition(checked_value=3, condition_value=3, condition_operator='==')
+assert check_condition(checked_value='One', condition_value='Two', condition_operator='!=')
+
+# However, it abstracts away working with different types of inputs, such as numpy arrays:
+output = check_condition(checked_value=np.array([1, 2, 3]), condition_value=1, condition_operator='==')
+assert np.array_equal(output, np.array([True, False, False]))
+
+# And python iterables:
+output = check_condition(checked_value=[1, 1, 1], condition_value=1, condition_operator='==')
+assert np.array_equal(output, [True, True, True])
+```
+
 ___
 
 ## API Documentation
@@ -485,6 +584,9 @@ to see the list of available tasks.
 
 **Note!** All commits to this project have to successfully complete the ```tox``` task before being pushed to GitHub. 
 To minimize the runtime task for this task, use ```tox --parallel```.
+
+For more information, you can also see the 'Usage' section of the 
+[ataraxis-automation project](https://github.com/Sun-Lab-NBB/ataraxis-automation) documentation.
 
 ### Environments
 
@@ -543,8 +645,10 @@ ___
 
 - All Sun Lab [members](https://neuroai.github.io/sunlab/people) for providing the inspiration and comments during the
   development of this library.
-- [loguru](https://github.com/Delgan/loguru) and [click](https://github.com/pallets/click/) projects for providing all
-  low-level functionality for this project.
+- [loguru](https://github.com/Delgan/loguru) and [click](https://github.com/pallets/click/) projects for providing
+  all low-level functionality for the Console class.
+- [numpy](https://github.com/numpy/numpy) project for providing low-level functionality for some of the 
+  standalone methods.
 - The creators of all other projects used in our development automation pipelines [see pyproject.toml](pyproject.toml).
 
 ---

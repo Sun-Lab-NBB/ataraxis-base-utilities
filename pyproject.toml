@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-base-utilities"
-version = "2.0.1"
+version = "2.1.0"
 description = "Provides a minimalistic set of shared utility functions used to support most other Sun Lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -46,6 +46,7 @@ classifiers = [
 dependencies = [
     "click>=8,<9",
     "loguru>=0,<1",
+    "numpy>=2,<3",
 ]
 
 [project.urls]
@@ -62,6 +63,7 @@ Documentation = "https://ataraxis-base-utilities-api-docs.netlify.app/"
 condarun = [
     "click>=8,<9",
     "loguru>=0,<1",
+    "numpy>=2,<3",
 ]
 
 # Dependencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).

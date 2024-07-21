@@ -1,5 +1,5 @@
 from _typeshed import Incomplete
-from collections.abc import Callable as Callable
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -65,7 +65,6 @@ class LogExtensions:
 
         The returned tuple is used by the Console class to validate incoming log paths.
         """
-    def __init__(self, LOG=..., TXT=..., JSON=...) -> None: ...
 
 class Console:
     """After initial configuration, provides methods for terminal-printing and file-logging messages and errors.
@@ -147,7 +146,7 @@ class Console:
         _message_terminal: Tracks whether the class should print general messages to terminal.
         _message_file: Tracks whether the class should write general messages to message log file.
         _error_terminal: Tracks whether the class should print errors to terminal.
-        _error_file: Tracks whether the class is should write to error log file.
+        _error_file: Tracks whether the class should write to error log file.
         _reraise: Tracks whether the class should reraise errors after they are caught and handled by the logger
             backend.
         _callback: Stores the callback function Console.error() method should call after catching the raised error.
@@ -311,7 +310,7 @@ class Console:
     def reraise(self) -> bool:
         """Returns True if Console.error() method should reraise logged error messages."""
     def set_reraise(self, enabled: bool) -> None:
-        """Sets the value of the reraise attribute to the specified value."""
+        """Sets the value of the 'reraise' attribute to the specified value."""
     @staticmethod
     def _ensure_directory_exists(path: Path) -> None:
         """Determines if the directory portion of the input path exists and, if not, creates it.

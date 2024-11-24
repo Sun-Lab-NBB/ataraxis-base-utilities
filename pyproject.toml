@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-base-utilities"
-version = "3.0.0"
+version = "3.0.1"
 description = "Provides a minimalistic set of shared utility functions used to support most other Sun Lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }

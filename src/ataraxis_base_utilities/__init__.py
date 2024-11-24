@@ -5,8 +5,8 @@ API documentation: https://ataraxis-base-utilities-api-docs.netlify.app/
 Author: Ivan Kondratyev (Inkaros)
 """
 
-from .console import Console, LogLevel, LogBackends, LogExtensions, default_callback
-from .standalone_methods import ensure_list, chunk_iterable, check_condition, compare_nested_tuples
+from .console import Console, LogLevel, LogBackends, LogExtensions, default_callback, ensure_directory_exists
+from .standalone_methods import ensure_list, error_format, chunk_iterable, check_condition, compare_nested_tuples
 
 # Preconfigures and exposes Console class instance as a variable, similar to how Loguru exposes logger. This instance
 # can be used globally instead of defining a custom console variable.
@@ -23,4 +23,6 @@ __all__ = [
     "chunk_iterable",
     "check_condition",
     "default_callback",
+    "ensure_directory_exists",
+    "error_format",
 ]

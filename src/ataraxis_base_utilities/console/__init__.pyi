@@ -4,8 +4,17 @@ from .console_class import (
     LogBackends as LogBackends,
     LogExtensions as LogExtensions,
     default_callback as default_callback,
+    ensure_directory_exists as ensure_directory_exists,
 )
 
-__all__ = ["console", "Console", "LogLevel", "LogBackends", "LogExtensions", "default_callback"]
+__all__ = [
+    "console",
+    "Console",
+    "LogLevel",
+    "LogBackends",
+    "LogExtensions",
+    "default_callback",
+    "ensure_directory_exists",
+]
 
 console: Console

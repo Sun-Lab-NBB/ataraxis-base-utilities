@@ -8,10 +8,25 @@ libraries to centralize Console API access and control logging parameters throug
 See the console_class.py module for more details about the Console and helper class.
 """
 
-from .console_class import Console, LogLevel, LogBackends, LogExtensions, default_callback
+from .console_class import (
+    Console,
+    LogLevel,
+    LogBackends,
+    LogExtensions,
+    default_callback,
+    ensure_directory_exists,
+)
 
 # Preconfigures and exposes Console class instance as a variable, similar to how Loguru exposes logger. This instance
 # can be used globally instead of defining a custom console variable.
 console: Console = Console(logger_backend=LogBackends.LOGURU, auto_handles=True)
 
-__all__ = ["console", "Console", "LogLevel", "LogBackends", "LogExtensions", "default_callback"]
+__all__ = [
+    "console",
+    "Console",
+    "LogLevel",
+    "LogBackends",
+    "LogExtensions",
+    "default_callback",
+    "ensure_directory_exists",
+]

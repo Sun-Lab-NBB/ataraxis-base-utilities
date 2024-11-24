@@ -26,7 +26,25 @@ def default_callback(__error: str | int | None = None) -> Any:
     The main advantage of using this callback over the plain sys.exit is that it avoids reprinting the exception
     message, reducing the output clutter.
     """
-    sys.exit("Runtime aborted.")
+    sys.exit("Runtime aborted due to an intercepted error. Check console output / error log for details.")
+
+
+def ensure_directory_exists(path: Path) -> None:
+    """Determines if the directory portion of the input path exists and, if not, creates it.
+
+    When the input path ends with an .extension (indicating a file path), the file portion is ignored and
+    only the directory path is evaluated.
+
+    Args:
+        path: The path to be processed. Can be a file or a directory path.
+    """
+    # If the path is a file (because it has a .extension suffix), ensures the parent directory of the file, if any,
+    # exists.
+    if path.suffix != "":
+        path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        # If the path is a directory path, ensures the directory exists.
+        path.mkdir(parents=True, exist_ok=True)
 
 
 class LogLevel(Enum):
@@ -129,6 +147,7 @@ class LogExtensions:
 
         The returned tuple is used by the Console class to validate incoming log paths.
         """
+        # noinspection PyTypeChecker
         return tuple(getattr(cls, field.name) for field in fields(cls))
 
 
@@ -150,7 +169,7 @@ class Console:
         properly, the Console has to be enabled at the highest level of the call hierarchy: from the main runtime
         script. Leave console configuration and enabling to the end-user.
 
-        For LOGURU backends, make sure you call add_handles() method prior to processing messages to ensure that the
+        For LOGURU backends, make sure you call add_handles() method before processing messages to ensure that the
         class is properly configured to handle messages.
 
     Args:
@@ -182,8 +201,8 @@ class Console:
             width requirement.
         use_color: Determines whether to colorize the terminal output. This primarily applies to loguru backend.
         debug_terminal: Determines whether to print messages at or below DEBUG level to terminal.
-        debug_file: Determines whether to write messages at or below DEBUG level to debug-log file. This only works if
-            a valid debug log file was provided.
+        debug_file: Determines whether to write messages at or below DEBUG level to the debug-log file. This only works
+            if a valid debug log file was provided.
         message_terminal: Same as debug_terminal, but for messages at INFO through WARNING levels.
         message_file: Same as debug_file, but for messages at INFO through WARNING levels.
         error_terminal: Same as debug_terminal, but for messages at or above ERROR level.
@@ -210,9 +229,9 @@ class Console:
         _debug_terminal: Tracks whether the class should print debug messages to terminal.
         _debug_file: Tracks whether the class should write debug messages to debug log file.
         _message_terminal: Tracks whether the class should print general messages to terminal.
-        _message_file: Tracks whether the class should write general messages to message log file.
+        _message_file: Tracks whether the class should write general messages to the message log file.
         _error_terminal: Tracks whether the class should print errors to terminal.
-        _error_file: Tracks whether the class should write to error log file.
+        _error_file: Tracks whether the class should write to the error log file.
         _reraise: Tracks whether the class should reraise errors after they are caught and handled by the logger
             backend.
         _callback: Stores the callback function Console.error() method should call after catching the raised error.
@@ -288,7 +307,7 @@ class Console:
                     )
                 )
             # If the path is valid, verifies the directory portion of the path exists and, if not, creates it.
-            self._ensure_directory_exists(debug_log_path)
+            ensure_directory_exists(debug_log_path)
         else:
             # If the debug log file is not provided, ensures debug logging is disabled.
             self._debug_file = False
@@ -309,7 +328,7 @@ class Console:
                         break_long_words=self._break_long_words,
                     )
                 )
-            self._ensure_directory_exists(message_log_path)
+            ensure_directory_exists(message_log_path)
         else:
             # If the message log file is not provided, ensures message logging is disabled.
             self._message_file = False
@@ -331,7 +350,7 @@ class Console:
                     )
                 )
 
-            self._ensure_directory_exists(error_log_path)
+            ensure_directory_exists(error_log_path)
         else:
             # If the error log file is not provided, ensures error logging is disabled.
             self._error_file = False
@@ -377,7 +396,7 @@ class Console:
         """Returns a string representation of the class instance."""
         return (
             f"Console(backend={self._backend}, has_handles={self.has_handles}, auto_handles={self._auto_handles}, "
-            f"enabled={self.is_enabled}, line_width={self._line_width}, debug_terminal={self._debug_terminal}, "
+            f"enabled={self.enabled}, line_width={self._line_width}, debug_terminal={self._debug_terminal}, "
             f"debug_file={self._debug_file}, message_terminal={self._message_terminal}, "
             f"message_file={self._message_file}, error_terminal={self._error_terminal}, error_file={self._error_file})"
         )
@@ -461,7 +480,7 @@ class Console:
             )
 
         # Error terminal-printing-handle. Does not include additional diagnostic information, but includes the whole
-        # backtrace of the error message. It works similarly to default python error traces, but without mandatory
+        # backtrace of the error message. It works similarly to default python error traces but without mandatory
         # runtime termination. Works for ERROR+ level messages. Unlike other two handles, writes to
         # stderr, rather than stdout.
         if self._error_terminal:
@@ -476,8 +495,8 @@ class Console:
                 enqueue=enqueue,
             )
 
-        # Debug file-writing handle. The only difference from the terminal handle is that it writes to a file, rather
-        # than the stdout handle and that ut uses ataraxis_log tag instead of the ataraxis_shell. Debug files are
+        # Handle for debug file-writing. The only difference from the terminal handle is that it writes to a file,
+        # rather than the stdout handle and that ut uses ataraxis_log tag instead of the ataraxis_shell. Debug files are
         # automatically removed after 2 days and are not compressed as they are considered temporary.
         if not isinstance(self._debug_log_path, NoneType) and self._debug_file:
             logger.add(
@@ -560,7 +579,7 @@ class Console:
             )
 
         # Ensures that the directory included in the path exists and overwrites the local debug log path
-        self._ensure_directory_exists(path)
+        ensure_directory_exists(path)
         self._debug_log_path = path
 
         if self._auto_handles:
@@ -598,7 +617,7 @@ class Console:
             )
 
         # Ensures that the directory included in the path exists and overwrites the local message log path
-        self._ensure_directory_exists(path)
+        ensure_directory_exists(path)
         self._message_log_path = path
 
         if self._auto_handles:
@@ -636,7 +655,7 @@ class Console:
             )
 
         # Ensures that the directory included in the path exists and overwrites the local error log path
-        self._ensure_directory_exists(path)
+        ensure_directory_exists(path)
         self._error_log_path = path
 
         if self._auto_handles:
@@ -656,7 +675,7 @@ class Console:
             return False
 
     @property
-    def is_enabled(self) -> bool:
+    def enabled(self) -> bool:
         """Returns True if logging with this Console class instance is enabled."""
         return self._is_enabled
 
@@ -674,7 +693,7 @@ class Console:
 
     @property
     def debug_file(self) -> bool:
-        """Returns True if writing messages at or below DEBUG level to log file is allowed."""
+        """Returns True if writing messages at or below DEBUG level to the log file is allowed."""
         return self._debug_file
 
     def set_debug_file(self, enabled: bool) -> None:
@@ -698,7 +717,7 @@ class Console:
 
     @property
     def message_file(self) -> bool:
-        """Returns True if writing messages between INFO and WARNING levels to log file is allowed."""
+        """Returns True if writing messages between INFO and WARNING levels to the log file is allowed."""
         return self._message_file
 
     def set_message_file(self, enabled: bool) -> None:
@@ -722,7 +741,7 @@ class Console:
 
     @property
     def error_file(self) -> bool:
-        """Returns True if writing messages at or above ERROR level to log file is allowed."""
+        """Returns True if writing messages at or above ERROR level to the log file is allowed."""
         return self._error_file
 
     def set_error_file(self, enabled: bool) -> None:
@@ -745,24 +764,6 @@ class Console:
         """Sets the value of the 'reraise' attribute to the specified value."""
         self._reraise = enabled
 
-    @staticmethod
-    def _ensure_directory_exists(path: Path) -> None:
-        """Determines if the directory portion of the input path exists and, if not, creates it.
-
-        When the input path ends with an .extension (indicating a file path), the file portion is ignored and
-        only the directory path is evaluated.
-
-        Args:
-            path: The path to be processed. Can be a file or a directory path.
-        """
-        # If the path is a file (because it has a .extension suffix), ensures the parent directory of the file, if any,
-        # exists.
-        if path.suffix != "":
-            path.parent.mkdir(parents=True, exist_ok=True)
-        else:
-            # If the path is a directory path, ensures the directory exists.
-            path.mkdir(parents=True, exist_ok=True)
-
     def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the class configuration parameters.
 
@@ -784,7 +785,7 @@ class Console:
         # characters of the first line.
         if loguru:
             # Calculates indent and dedent parameters for the lines
-            first_line_width: int = self._line_width - 37  # Makes the first line shorter
+            first_line_width: int = self._line_width - 37  # Shortens the first line
             subsequent_indent: str = " " * 37
             lines: list[str] = []
 
@@ -851,7 +852,7 @@ class Console:
         """
 
         # If the Console is disabled, returns False
-        if not self.is_enabled:
+        if not self.enabled:
             return False
 
         # Loguru backend
@@ -935,7 +936,7 @@ class Console:
 
         Notes:
             When console is enabled, this method can be used to flexibly handle raise errors in-place. For example, it
-            can be used to redirect errors to log file, provides enhanced traceback and analysis data (for loguru
+            can be used to redirect errors to the log file, provides enhanced traceback and analysis data (for loguru
             backend only) and can even execute callback functions after logging the error
             (also for loguru backend only.)
 
@@ -956,7 +957,7 @@ class Console:
         formatted_message: str = self.format_message(message, loguru=False)
 
         # If the backend is loguru, raises and catches the exception with loguru
-        if self._backend == LogBackends.LOGURU and self.is_enabled:
+        if self._backend == LogBackends.LOGURU and self.enabled:
             if not self.has_handles:
                 message = (
                     f"Unable to properly log the requested error. The Console class is configured to use the loguru "
@@ -983,7 +984,7 @@ class Console:
 
         # If the backend is click, prints the message to the requested destinations (file, terminal or both) and
         # optionally raises the error if re-raising is requested.
-        elif self._backend == LogBackends.CLICK and self.is_enabled:
+        elif self._backend == LogBackends.CLICK and self.enabled:
             if self._error_file and self._error_log_path is not None:
                 with open(file=str(self._error_log_path), mode="a") as file:
                     click.echo(file=file, message=formatted_message, color=False)

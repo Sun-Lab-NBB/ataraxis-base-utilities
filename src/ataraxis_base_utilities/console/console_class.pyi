@@ -14,6 +14,16 @@ def default_callback(__error: str | int | None = None, /) -> Any:
     message, reducing the output clutter.
     """
 
+def ensure_directory_exists(path: Path) -> None:
+    """Determines if the directory portion of the input path exists and, if not, creates it.
+
+    When the input path ends with an .extension (indicating a file path), the file portion is ignored and
+    only the directory path is evaluated.
+
+    Args:
+        path: The path to be processed. Can be a file or a directory path.
+    """
+
 class LogLevel(Enum):
     """Maps valid literal arguments that can be passed to some Console class methods to programmatically callable
     variables.
@@ -88,7 +98,7 @@ class Console:
         properly, the Console has to be enabled at the highest level of the call hierarchy: from the main runtime
         script. Leave console configuration and enabling to the end-user.
 
-        For LOGURU backends, make sure you call add_handles() method prior to processing messages to ensure that the
+        For LOGURU backends, make sure you call add_handles() method before processing messages to ensure that the
         class is properly configured to handle messages.
 
     Args:
@@ -120,8 +130,8 @@ class Console:
             width requirement.
         use_color: Determines whether to colorize the terminal output. This primarily applies to loguru backend.
         debug_terminal: Determines whether to print messages at or below DEBUG level to terminal.
-        debug_file: Determines whether to write messages at or below DEBUG level to debug-log file. This only works if
-            a valid debug log file was provided.
+        debug_file: Determines whether to write messages at or below DEBUG level to the debug-log file. This only works
+            if a valid debug log file was provided.
         message_terminal: Same as debug_terminal, but for messages at INFO through WARNING levels.
         message_file: Same as debug_file, but for messages at INFO through WARNING levels.
         error_terminal: Same as debug_terminal, but for messages at or above ERROR level.
@@ -148,9 +158,9 @@ class Console:
         _debug_terminal: Tracks whether the class should print debug messages to terminal.
         _debug_file: Tracks whether the class should write debug messages to debug log file.
         _message_terminal: Tracks whether the class should print general messages to terminal.
-        _message_file: Tracks whether the class should write general messages to message log file.
+        _message_file: Tracks whether the class should write general messages to the message log file.
         _error_terminal: Tracks whether the class should print errors to terminal.
-        _error_file: Tracks whether the class should write to error log file.
+        _error_file: Tracks whether the class should write to the error log file.
         _reraise: Tracks whether the class should reraise errors after they are caught and handled by the logger
             backend.
         _callback: Stores the callback function Console.error() method should call after catching the raised error.
@@ -297,7 +307,7 @@ class Console:
         False.
         """
     @property
-    def is_enabled(self) -> bool:
+    def enabled(self) -> bool:
         """Returns True if logging with this Console class instance is enabled."""
     @property
     def debug_terminal(self) -> bool:
@@ -306,7 +316,7 @@ class Console:
         """Sets the value of the debug_terminal attribute to the specified value."""
     @property
     def debug_file(self) -> bool:
-        """Returns True if writing messages at or below DEBUG level to log file is allowed."""
+        """Returns True if writing messages at or below DEBUG level to the log file is allowed."""
     def set_debug_file(self, enabled: bool) -> None:
         """Sets the value of the debug_file attribute to the specified value."""
     @property
@@ -316,7 +326,7 @@ class Console:
         """Sets the value of the message_terminal attribute to the specified value."""
     @property
     def message_file(self) -> bool:
-        """Returns True if writing messages between INFO and WARNING levels to log file is allowed."""
+        """Returns True if writing messages between INFO and WARNING levels to the log file is allowed."""
     def set_message_file(self, enabled: bool) -> None:
         """Sets the value of the message_file attribute to the specified value."""
     @property
@@ -326,7 +336,7 @@ class Console:
         """Sets the value of the error_terminal attribute to the specified value."""
     @property
     def error_file(self) -> bool:
-        """Returns True if writing messages at or above ERROR level to log file is allowed."""
+        """Returns True if writing messages at or above ERROR level to the log file is allowed."""
     def set_error_file(self, enabled: bool) -> None:
         """Sets the value of the error_file attribute to the specified value."""
     def set_callback(self, callback: Callable[[], Any] | None) -> None:
@@ -336,16 +346,6 @@ class Console:
         """Returns True if Console.error() method should reraise logged error messages."""
     def set_reraise(self, enabled: bool) -> None:
         """Sets the value of the 'reraise' attribute to the specified value."""
-    @staticmethod
-    def _ensure_directory_exists(path: Path) -> None:
-        """Determines if the directory portion of the input path exists and, if not, creates it.
-
-        When the input path ends with an .extension (indicating a file path), the file portion is ignored and
-        only the directory path is evaluated.
-
-        Args:
-            path: The path to be processed. Can be a file or a directory path.
-        """
     def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the class configuration parameters.
 
@@ -396,7 +396,7 @@ class Console:
 
         Notes:
             When console is enabled, this method can be used to flexibly handle raise errors in-place. For example, it
-            can be used to redirect errors to log file, provides enhanced traceback and analysis data (for loguru
+            can be used to redirect errors to the log file, provides enhanced traceback and analysis data (for loguru
             backend only) and can even execute callback functions after logging the error
             (also for loguru backend only.)
 

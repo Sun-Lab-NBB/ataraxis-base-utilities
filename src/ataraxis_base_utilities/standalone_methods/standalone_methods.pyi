@@ -59,9 +59,9 @@ def chunk_iterable(
 
 def check_condition(
     checked_value: int | float | str | bool | tuple[Any] | list[Any] | NDArray[Any] | np.number[Any],
-    condition_value: int | float | str | bool | np.number[Any] | np.bool_,
+    condition_value: int | float | str | bool | np.number[Any] | np.bool,
     condition_operator: Literal[">", "<", ">=", "<=", "==", "!="],
-) -> bool | np.bool_ | NDArray[np.bool_] | tuple[bool, ...]:
+) -> bool | np.bool | NDArray[np.bool] | tuple[bool, ...]:
     """Checks the input value against the condition value, using requested condition operator.
 
     Can take tuples, lists, and numpy arrays as checked_value, in which case the condition_value is applied
@@ -78,8 +78,8 @@ def check_condition(
             of '>','<','>=','<=','==','!='.
 
     Returns:
-        A boolean value for Python scalar inputs. A numpy.bool_ value for NumPy scalar inputs. A boolean numpy array for
-        NumPy array inputs. A tuple of boolean values for Python iterable inputs.
+        A boolean value for Python scalar inputs. A numpy boolean value for NumPy scalar inputs. A boolean numpy array
+        for NumPy array inputs. A tuple of boolean values for Python iterable inputs.
 
     Raises:
         KeyError: If an unsupported operator symbol is provided.
@@ -109,4 +109,24 @@ def compare_nested_tuples(x: tuple[Any, ...], y: tuple[Any, ...]) -> bool:
 
     Raises:
         TypeError: If x or y is not a tuple
+    """
+
+def error_format(message: str) -> str:
+    """Formats the input message to match the default Console format and escapes it using re, so that it can be used to
+    verify raised exceptions.
+
+    This method is primarily designed to help developers writing test functions for Ataraxis codebase. Since Console
+    is used across the project to format error and information messages, it will format all messages passed through it
+    in a way that makes it challenging to match raised error messages to expected messages. This method can be applied
+    to expected error messages to ensure their format matches messages raised by the console.error() calls.
+
+    Notes:
+        This method directly accesses the global console variable to retrieve the formatting parameters. Therefore, it
+        should always match the active Console instance used for raising errors and logging.
+
+    Args:
+        message: The message to format.
+
+    Returns:
+        Formatted message that can be used to verify raised exceptions.
     """

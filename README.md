@@ -32,6 +32,7 @@ ___
 
 - Supports Windows, Linux, and OSx.
 - Loguru-based Console class that provides message and logging functionality.
+- Frequently re-implemented utility method, such as a method that ensures the parent directory of a file path exists.
 - Pure-python API.
 - GPL 3 License.
 ___
@@ -69,13 +70,6 @@ ___
 ### PIP
 
 Use the following command to install the library using PIP: ```pip install ataraxis-base-utilities```
-
-### Conda / Mamba
-
-**_Note. Due to conda-forge contributing process being more nuanced than pip uploads, conda versions may lag behind
-pip and source code distributions._**
-
-Use the following command to install the library using Conda or Mamba: ```conda install ataraxis-base-utilities```
 ___
 
 ## Usage
@@ -528,6 +522,38 @@ output = check_condition(checked_value=[1, 1, 1], condition_value=1, condition_o
 assert np.array_equal(output, [True, True, True])
 ```
 
+#### Ensure directory exists
+This method was originally defined as private method for the Console class, but it is now a public standalone method. 
+This method checks whether the directory portion of the input path exists and, if not, it creates the necessary 
+directory hierarchy. This is helpful when working with files, as files cannot be created if their root directory does
+not exist.
+```
+import tempfile
+from pathlib import Path
+from ataraxis_base_utilities import ensure_directory_exists
+
+# Precreates a temporary directory
+with tempfile.TemporaryDirectory() as temp_dir:
+
+    # Defines a file-path that adds two subdirectories and defines a text file
+    file_path = Path(f"{temp_dir}/subfolder1/subfolder2/my_file.txt")
+
+    # Ensures that the first subfolder does not exist
+    assert not Path(f"{temp_dir}/subfolder1").exists()
+
+    # This ensures that the subdirectories exist
+    ensure_directory_exists(path=file_path)
+
+    # Ensures that both subfolders now exist
+    assert Path(f"{temp_dir}/subfolder1").exists()
+    assert Path(f"{temp_dir}/subfolder1/subfolder2").exists()
+
+    # The method does nothing if the directories already exist.
+    ensure_directory_exists(path=file_path)
+
+    # The method does not create files, it only created directories.
+    assert not file_path.exists()
+```
 ___
 
 ## API Documentation
@@ -591,8 +617,8 @@ For more information, you can also see the 'Usage' section of the
 ### Environments
 
 All environments used during development are exported as .yml files and as spec.txt files to the [envs](envs) folder.
-The environment snapshots were taken on each of the three explicitly supported OS families: Windows 11, OSx (M1) 14.5
-and Linux Ubuntu 22.04 LTS.
+The environment snapshots were taken on each of the three explicitly supported OS families: Windows 11, OSx (M1) 15.1
+and Linux Ubuntu 24.04 LTS.
 
 **Note!** Since the OSx environment was built for an M1 (Apple Silicon) platform, it may not work on Intel-based 
 Apple devices.

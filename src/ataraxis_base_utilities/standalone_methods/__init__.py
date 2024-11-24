@@ -8,11 +8,6 @@ projects, such as comparing two-dimensional tuples with mixed element datatypes 
 See standalone_methods.py module for more details about the standalone methods provided by this package.
 """
 
-from .standalone_methods import ensure_list, chunk_iterable, check_condition, compare_nested_tuples
+from .standalone_methods import ensure_list, error_format, chunk_iterable, check_condition, compare_nested_tuples
 
-__all__ = [
-    "ensure_list",
-    "compare_nested_tuples",
-    "chunk_iterable",
-    "check_condition",
-]
+__all__ = ["ensure_list", "compare_nested_tuples", "chunk_iterable", "check_condition", "error_format"]

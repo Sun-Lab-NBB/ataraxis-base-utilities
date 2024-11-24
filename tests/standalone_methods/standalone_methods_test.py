@@ -1,33 +1,11 @@
 """Contains tests for functions stored in the standalone_methods package."""
 
-import re
 from typing import Any
-import textwrap
 
 import numpy as np
 import pytest
 
-from ataraxis_base_utilities import (
-    ensure_list,
-    chunk_iterable,
-    check_condition,
-    compare_nested_tuples,
-)
-
-
-def error_format(message: str) -> str:
-    """Formats the input message to match the default Console format and escapes it using re, so that it can be used to
-    verify raised exceptions.
-
-    This method is used to set up pytest 'match' clauses to verify raised exceptions.
-
-    Args:
-        message: The message to format and escape, according to standard Ataraxis testing parameters.
-
-    Returns:
-        Formatted and escape message that can be used as the 'match' argument of pytest.raises() method.
-    """
-    return re.escape(textwrap.fill(message, width=120, break_long_words=False, break_on_hyphens=False))
+from ataraxis_base_utilities import ensure_list, error_format, chunk_iterable, check_condition, compare_nested_tuples
 
 
 # noinspection PyRedundantParentheses

@@ -6,29 +6,28 @@ import sys
 from typing import Any, Generator
 from pathlib import Path
 import tempfile
-import textwrap
 
 from loguru import logger
 import pytest
 
-from ataraxis_base_utilities import Console, LogLevel, LogBackends, LogExtensions, console, default_callback
+from ataraxis_base_utilities import (
+    Console,
+    LogLevel,
+    LogBackends,
+    LogExtensions,
+    console,
+    error_format,
+    default_callback,
+    ensure_directory_exists,
+)
 
 
 @pytest.fixture
 def temp_dir() -> Generator[Path, Any, None]:
     """Generates and yields the temporary directory used by the tests that involve log file operations."""
-    tmpdirname: str
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        yield Path(tmpdirname)
-
-
-def error_format(message: str) -> str:
-    """Formats the input message to match the default Console format and escapes it using re, so that it can be used to
-    verify raised exceptions.
-
-    This method is used to set up pytest 'match' clauses to verify raised exceptions.
-    """
-    return re.escape(textwrap.fill(message, width=120, break_long_words=False, break_on_hyphens=False))
+    temp_dir_name: str
+    with tempfile.TemporaryDirectory() as temp_dir_name:
+        yield Path(temp_dir_name)
 
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
@@ -308,15 +307,15 @@ def test_console_add_handles(backend, tmp_path, capsys) -> None:
 
 @pytest.mark.parametrize("backend", [LogBackends.LOGURU, LogBackends.CLICK])
 def test_console_enable_disable(backend) -> None:
-    """Verifies the functionality of Console class enable() / disable() methods and the is_enabled() property."""
+    """Verifies the functionality of Console class enable() / disable() methods and the enabled() property."""
 
-    # tests enable / disable methods and is_enabled tracker
+    # tests enable / disable methods and enabled tracker
     test_console = Console(logger_backend=backend)
-    assert not test_console.is_enabled
+    assert not test_console.enabled
     test_console.enable()
-    assert test_console.is_enabled
+    assert test_console.enabled
     test_console.disable()
-    assert not test_console.is_enabled
+    assert not test_console.enabled
 
     # Verifies that echo does not process input messages when the console is disabled
     assert not test_console.echo(message="Test", level=LogLevel.INFO)
@@ -376,34 +375,34 @@ def test_invalid_path_error_handling() -> None:
 
 
 def test_ensure_directory_exists() -> None:
-    """Verifies the functionality of Console class _ensure_directory_exists() method"""
+    """Verifies the functionality of ensure_directory_exists() standalone function."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Test with a directory path
         dir_path = Path(temp_dir) / "test_dir"
-        Console._ensure_directory_exists(dir_path)
+        ensure_directory_exists(dir_path)
         assert dir_path.exists() and dir_path.is_dir()
 
         # Test with a file path
         file_path = Path(temp_dir) / "nested" / "dir" / "test_file.txt"
-        Console._ensure_directory_exists(file_path)
+        ensure_directory_exists(file_path)
         assert file_path.parent.exists() and file_path.parent.is_dir()
         assert not file_path.exists()  # The file itself should not be created
 
         # Test with an existing directory
         existing_dir = Path(temp_dir) / "existing_dir"
         existing_dir.mkdir()
-        Console._ensure_directory_exists(existing_dir)
+        ensure_directory_exists(existing_dir)
         assert existing_dir.exists() and existing_dir.is_dir()
 
         # Test with a path that includes a file in an existing directory
         existing_file_path = Path(temp_dir) / "test_file2.txt"
-        Console._ensure_directory_exists(existing_file_path)
+        ensure_directory_exists(existing_file_path)
         assert existing_file_path.parent.exists() and existing_file_path.parent.is_dir()
         assert not existing_file_path.exists()  # The file itself should not be created
 
         # Test with a deeply nested path
         deep_path = Path(temp_dir) / "very" / "deep" / "nested" / "directory" / "structure"
-        Console._ensure_directory_exists(deep_path)
+        ensure_directory_exists(deep_path)
         assert deep_path.exists() and deep_path.is_dir()
 
 
@@ -416,9 +415,11 @@ def test_console_output_attributes() -> None:
     # Debug terminal
     console.set_debug_terminal(False)
     assert not console.debug_terminal
+    # noinspection PyUnresolvedReferences
     handles_1 = len(logger._core.handlers)
     console.set_debug_terminal(True)
     assert console.debug_terminal
+    # noinspection PyUnresolvedReferences
     assert len(logger._core.handlers) != handles_1  # Verifies that auto_handles works as expected
 
     # Debug file

@@ -3,6 +3,7 @@ from .console import (
     LogLevel as LogLevel,
     LogBackends as LogBackends,
     LogExtensions as LogExtensions,
+    pass_callback as pass_callback,
     default_callback as default_callback,
     ensure_directory_exists as ensure_directory_exists,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "default_callback",
     "ensure_directory_exists",
     "error_format",
+    "pass_callback",
 ]
 
 console: Console

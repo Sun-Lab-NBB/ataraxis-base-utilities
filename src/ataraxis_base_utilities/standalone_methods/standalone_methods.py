@@ -228,6 +228,7 @@ def compare_nested_tuples(x: tuple[Any, ...], y: tuple[Any, ...]) -> bool:
     return len(x) == len(y) and all(subtuple1 == subtuple2 for subtuple1, subtuple2 in zip(x, y))
 
 
+# noinspection PyProtectedMember
 def error_format(message: str) -> str:
     """Formats the input message to match the default Console format and escapes it using re, so that it can be used to
     verify raised exceptions.

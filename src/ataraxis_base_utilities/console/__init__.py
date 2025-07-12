@@ -13,13 +13,14 @@ from .console_class import (
     LogLevel,
     LogBackends,
     LogExtensions,
+    pass_callback,
     default_callback,
     ensure_directory_exists,
 )
 
 # Preconfigures and exposes Console class instance as a variable, similar to how Loguru exposes logger. This instance
 # can be used globally instead of defining a custom console variable.
-console: Console = Console(logger_backend=LogBackends.LOGURU, auto_handles=True)
+console: Console = Console(logger_backend=LogBackends.LOGURU, auto_handles=True, use_default_error_handler=True)
 
 __all__ = [
     "console",
@@ -28,5 +29,6 @@ __all__ = [
     "LogBackends",
     "LogExtensions",
     "default_callback",
+    "pass_callback",
     "ensure_directory_exists",
 ]

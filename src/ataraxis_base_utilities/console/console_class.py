@@ -7,12 +7,11 @@ used to support Console class runtimes.
 """
 
 import sys
-from enum import Enum
+from enum import StrEnum
 from types import NoneType
-from typing import Any, Literal, Optional
+from typing import Any, Optional
 from pathlib import Path
 import textwrap
-from dataclasses import fields, dataclass
 from collections.abc import Callable
 
 import click
@@ -27,6 +26,16 @@ def default_callback(__error: str | int | None = None) -> Any:
     message, reducing the output clutter.
     """
     sys.exit("Runtime aborted due to an intercepted error. Check console output / error log for details.")
+
+
+def pass_callback(__error: str | int | None = None) -> Any:
+    """A placeholder callback that does nothing.
+
+    This is a wrapper over 'pass' statement call designed to do nothing. It can be used as the input to 'onerror'
+    argument of loguru catch() method. Typically, this is used in-combination with 'reraise' argument set to True to
+    make loguru error handling behave similar to the regular Python exception handling.
+    """
+    pass
 
 
 def ensure_directory_exists(path: Path) -> None:
@@ -47,7 +56,7 @@ def ensure_directory_exists(path: Path) -> None:
         path.mkdir(parents=True, exist_ok=True)
 
 
-class LogLevel(Enum):
+class LogLevel(StrEnum):
     """Maps valid literal arguments that can be passed to some Console class methods to programmatically callable
     variables.
 
@@ -59,37 +68,37 @@ class LogLevel(Enum):
     the handles for 'DEBUG' level messages and suppress any message at or below DEBUG level.
     """
 
-    DEBUG: str = "debug"
+    DEBUG = "debug"
     """
     Messages that are not shown by default and need to be purposefully enabled. These messages can be left
     in source code during early project stages to speed-up debugging, but, ideally, should be removed for mature
     projects.
     """
-    INFO: str = "info"
+    INFO = "info"
     """
     General information messages, such as reporting the progress of a runtime.
     """
-    SUCCESS: str = "success"
+    SUCCESS = "success"
     """
     Runtime-ending messages specifically informing that a runtime ran successfully.
     """
-    WARNING: str = "warning"
+    WARNING = "warning"
     """
     Non-runtime-breaking, but potentially problematic messages, such as deprecation warnings.
     """
-    ERROR: str = "error"
+    ERROR = "error"
     """
     Typically used when dealing with exceptions. Report runtime-breaking errors and are typically augmented with 
     traceback information.
     """
-    CRITICAL: str = "critical"
+    CRITICAL = "critical"
     """
     Same as ERROR level, but more important. Critical errors are displayed using an augmented style that draws 
     end-user attention. Generally, this level is not used in most production runtimes.
     """
 
 
-class LogBackends(Enum):
+class LogBackends(StrEnum):
     """Maps valid backend options that can be used to instantiate the Console class to programmatically addressable
     variables.
 
@@ -100,19 +109,18 @@ class LogBackends(Enum):
     'click' backend.
     """
 
-    LOGURU: str = "loguru"
+    LOGURU = "loguru"
     """
     Loguru is the default backend for handling message and error printing and logging as it provides a robust set of 
     features and a high degree of customization. The Console class was primarily written to work with this backend.
     """
-    CLICK: str = "click"
+    CLICK = "click"
     """
     The backup backend, which also allows printing and logging messages and errors, but is not as robust as loguru.
     """
 
 
-@dataclass
-class LogExtensions:
+class LogExtensions(StrEnum):
     """Maps valid file-extension options that can be used by log file paths provided to the Console class to
     programmatically addressable variables.
 
@@ -124,31 +132,22 @@ class LogExtensions:
     f"file_name{LogExtensions.LOG}"
     """
 
-    LOG: str = ".log"
+    LOG = ".log"
     """
     Log file extensions should be the default for human-readable log files according to the general convention. These 
     files will behave exactly like .txt files, but their extension will further emphasize that they are log dumps.
     """
-    TXT: str = ".txt"
+    TXT = ".txt"
     """
     While generally discouraged, the default text extension can also be used for log dump files. These files will behave
     like any other text file.
     """
-    JSON: str = ".json"
+    JSON = ".json"
     """
     A special log file extension that is generally preferred for logs that are intended to be parsed from software. 
     Unlike other supported extensions, .json files are not directly human-readable, but provide better support for 
     programmatically parsing the logged data.
     """
-
-    @classmethod
-    def values(cls) -> tuple[str, ...]:
-        """Returns the valid extension options packaged into a tuple.
-
-        The returned tuple is used by the Console class to validate incoming log paths.
-        """
-        # noinspection PyTypeChecker
-        return tuple(getattr(cls, field.name) for field in fields(cls))
 
 
 class Console:
@@ -211,7 +210,10 @@ class Console:
             handled by the logging backend. For non-loguru backends, this determines if the error is raised in the first
             place or if the method only logs the error message. This option is primarily intended for runtimes that
             contain error-handling logic that has to be run in-addition to logging and tracing the error.
-
+        use_default_error_handler: Introduced in version 3.1.0. This toggle optionally overrides the error-handling
+            logic to use the default Python's error-handler even when Console is enabled and uses a valid backend. This
+            is used to support the runtimes that would prefer default Python error-handling, while still benefitting
+            from an advanced Console backend for message logging.
 
     Attributes:
         _line_width: Stores the maximum allowed text block line width, in characters.
@@ -235,6 +237,7 @@ class Console:
         _reraise: Tracks whether the class should reraise errors after they are caught and handled by the logger
             backend.
         _callback: Stores the callback function Console.error() method should call after catching the raised error.
+        _use_default_error_handler: Tracks whether the class should use the default Python error-handler.
 
     Raises:
         ValueError: If any of the provided log file paths is not valid. If the input line_width number is not valid.
@@ -243,7 +246,7 @@ class Console:
 
     def __init__(
         self,
-        logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = LogBackends.LOGURU,
+        logger_backend: LogBackends | str = LogBackends.LOGURU,
         debug_log_path: Optional[Path | str] = None,
         message_log_path: Optional[Path | str] = None,
         error_log_path: Optional[Path | str] = None,
@@ -261,6 +264,7 @@ class Console:
         error_terminal: bool = True,
         error_file: bool = False,
         reraise_errors: bool = False,
+        use_default_error_handler: bool = False,
     ) -> None:
         # Message formating parameters.
         if line_width <= 0:
@@ -285,8 +289,9 @@ class Console:
         self._message_file: bool = message_file
         self._error_terminal: bool = error_terminal
         self._error_file: bool = error_file
+        self._use_default_error_handler: bool = use_default_error_handler
 
-        self._valid_extensions: tuple[str, ...] = LogExtensions.values()
+        self._valid_extensions: tuple[str, ...] = tuple(LogExtensions)
 
         # Verifies that the input paths to log files, if any, use valid file extensions and are otherwise well-formed.
         # Stores currently supported log file extensions
@@ -362,10 +367,11 @@ class Console:
 
         # Internal trackers
         # Ensures logger backend is one of the supported options.
-        if not isinstance(logger_backend, LogBackends):
+        if logger_backend not in tuple(LogBackends):
             message = (
                 f"Invalid 'logger_backend' argument encountered when instantiating Console class instance. "
-                f"Expected a member of the LogBackends enumeration, but encountered {logger_backend}."
+                f"Expected a member of the LogBackends enumeration, but instead encountered {logger_backend} "
+                f"of type {type(logger_backend).__name__}."
             )
             raise ValueError(
                 textwrap.fill(
@@ -508,8 +514,8 @@ class Console:
                 enqueue=enqueue,
             )
 
-        # Message file-writing handle. Functions similarly to terminal-printing handle, but prints to a file that does
-        # not have a rotation window and is retained forever.
+        # Message file-writing handle. Functions similarly to the terminal-printing handle, but prints to a file that
+        # does not have a rotation window and is retained forever.
         if not isinstance(self._message_log_path, NoneType) and self._message_file:
             logger.add(
                 self._message_log_path,
@@ -562,7 +568,7 @@ class Console:
         Raises:
             ValueError: If the provided path does not end with one of the supported file-extensions.
         """
-        # Verifies tha the path points ot a valid file
+        # Verifies the path points ot a valid file
         if path.suffix not in self._valid_extensions:
             message = (
                 f"Invalid 'path' argument encountered when setting Console debug_log_path. "
@@ -764,6 +770,15 @@ class Console:
         """Sets the value of the 'reraise' attribute to the specified value."""
         self._reraise = enabled
 
+    @property
+    def use_default_error_handler(self) -> bool:
+        """Returns True if Console.error() method should use the default Python error handler."""
+        return self._use_default_error_handler
+
+    def set_use_default_error_handler(self, enabled: bool) -> None:
+        """Sets the value of the 'use_default_error_handler' attribute to the specified value."""
+        self._use_default_error_handler = enabled
+
     def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the class configuration parameters.
 
@@ -824,7 +839,7 @@ class Console:
                 break_on_hyphens=self._break_on_hyphens,
             )
 
-    def echo(self, message: str, level: LogLevel = LogLevel.INFO) -> bool:
+    def echo(self, message: str, level: str | LogLevel = LogLevel.INFO) -> bool:
         """Formats the input message according to the class configuration and outputs it to the terminal, file, or both.
 
         In a way, this can be seen as a better 'print'. Specifically, in addition to printing the text to the terminal,
@@ -890,6 +905,20 @@ class Console:
                 logger.error(formatted_message)
             elif level == LogLevel.CRITICAL:
                 logger.critical(formatted_message)
+            else:
+                message = (
+                    f"Unable to echo the requested message. The 'level' argument must be one of the valid levels "
+                    f"defined in the LogLevel enumeration, but instead encountered {level} of type "
+                    f"{type(level).__name__}."
+                )
+                raise RuntimeError(
+                    textwrap.fill(
+                        text=message,
+                        width=self._line_width,
+                        break_on_hyphens=self._break_on_hyphens,
+                        break_long_words=self._break_long_words,
+                    )
+                )
 
         elif self._backend == LogBackends.CLICK:
             # Formats the message using non-loguru parameters
@@ -935,7 +964,7 @@ class Console:
         arguments and Console backend configuration.
 
         Notes:
-            When console is enabled, this method can be used to flexibly handle raise errors in-place. For example, it
+            When console is enabled, this method can be used to flexibly handle raised errors in-place. For example, it
             can be used to redirect errors to the log file, provides enhanced traceback and analysis data (for loguru
             backend only) and can even execute callback functions after logging the error
             (also for loguru backend only.)
@@ -944,6 +973,10 @@ class Console:
             logging, or both are allowed. For loguru backend, the decision depends on whether the necessary handles
             have been added (or removed) from the backend. This can either be done manually or as a co-routine of the
             setter methods used to enable and disable certain types of outputs.
+
+            Since version 3.1.0, if the Console class is configured to use default error handlers, the method will use
+            the default 'raise' statement even when the Console is enabled and configured to use one of the supported
+            backends.
 
         Args:
             message: The error-message to use for the raised error.
@@ -957,7 +990,7 @@ class Console:
         formatted_message: str = self.format_message(message, loguru=False)
 
         # If the backend is loguru, raises and catches the exception with loguru
-        if self._backend == LogBackends.LOGURU and self.enabled:
+        if self._backend == LogBackends.LOGURU and self.enabled and not self._use_default_error_handler:
             if not self.has_handles:
                 message = (
                     f"Unable to properly log the requested error. The Console class is configured to use the loguru "
@@ -980,11 +1013,12 @@ class Console:
 
             # If loguru catches the error without re-raising or runtime-ending callback, ends the method runtime to
             # avoid triggering the general error raiser at the bottom of the method block.
+            # noinspection PyUnreachableCode
             return
 
         # If the backend is click, prints the message to the requested destinations (file, terminal or both) and
         # optionally raises the error if re-raising is requested.
-        elif self._backend == LogBackends.CLICK and self.enabled:
+        elif self._backend == LogBackends.CLICK and self.enabled and not self._use_default_error_handler:
             if self._error_file and self._error_log_path is not None:
                 with open(file=str(self._error_log_path), mode="a") as file:
                     click.echo(file=file, message=formatted_message, color=False)
@@ -999,6 +1033,7 @@ class Console:
                 return
 
         # With the way the rest of this class is structured, this will only be raised if all other backend-specific
-        # options are exhausted OR console is disabled. Having this as an unconditional end-statement ensures errors
-        # processed through console class will always be raised in some way.
+        # options are exhausted, console is disabled, or the class is configured to use default error handler. Having
+        # this as an unconditional end-statement ensures errors processed through console class will always be raised
+        # in some way.
         raise error(formatted_message)

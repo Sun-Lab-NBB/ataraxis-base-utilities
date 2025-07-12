@@ -1,7 +1,7 @@
 from typing import Any, Literal, Generator
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import NDArray as NDArray
 
 from ..console import console as console
 

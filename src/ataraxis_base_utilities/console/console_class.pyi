@@ -1,8 +1,7 @@
-from enum import Enum
-from typing import Any, Literal
+from enum import StrEnum
+from typing import Any
 from pathlib import Path
-from dataclasses import dataclass
-from collections.abc import Callable
+from collections.abc import Callable as Callable
 
 from _typeshed import Incomplete
 
@@ -12,6 +11,14 @@ def default_callback(__error: str | int | None = None, /) -> Any:
     This is a wrapper over sys.exit() that can be used as the input to 'onerror' argument of loguru catch() method.
     The main advantage of using this callback over the plain sys.exit is that it avoids reprinting the exception
     message, reducing the output clutter.
+    """
+
+def pass_callback(__error: str | int | None = None, /) -> Any:
+    """A placeholder callback that does nothing.
+
+    This is a wrapper over 'pass' statement call designed to do nothing. It can be used as the input to 'onerror'
+    argument of loguru catch() method. Typically, this is used in-combination with 'reraise' argument set to True to
+    make loguru error handling behave similar to the regular Python exception handling.
     """
 
 def ensure_directory_exists(path: Path) -> None:
@@ -24,7 +31,7 @@ def ensure_directory_exists(path: Path) -> None:
         path: The path to be processed. Can be a file or a directory path.
     """
 
-class LogLevel(Enum):
+class LogLevel(StrEnum):
     """Maps valid literal arguments that can be passed to some Console class methods to programmatically callable
     variables.
 
@@ -36,14 +43,14 @@ class LogLevel(Enum):
     the handles for 'DEBUG' level messages and suppress any message at or below DEBUG level.
     """
 
-    DEBUG: str
-    INFO: str
-    SUCCESS: str
-    WARNING: str
-    ERROR: str
-    CRITICAL: str
+    DEBUG = "debug"
+    INFO = "info"
+    SUCCESS = "success"
+    WARNING = "warning"
+    ERROR = "error"
+    CRITICAL = "critical"
 
-class LogBackends(Enum):
+class LogBackends(StrEnum):
     """Maps valid backend options that can be used to instantiate the Console class to programmatically addressable
     variables.
 
@@ -54,11 +61,10 @@ class LogBackends(Enum):
     'click' backend.
     """
 
-    LOGURU: str
-    CLICK: str
+    LOGURU = "loguru"
+    CLICK = "click"
 
-@dataclass
-class LogExtensions:
+class LogExtensions(StrEnum):
     """Maps valid file-extension options that can be used by log file paths provided to the Console class to
     programmatically addressable variables.
 
@@ -70,15 +76,9 @@ class LogExtensions:
     f"file_name{LogExtensions.LOG}"
     """
 
-    LOG: str = ...
-    TXT: str = ...
-    JSON: str = ...
-    @classmethod
-    def values(cls) -> tuple[str, ...]:
-        """Returns the valid extension options packaged into a tuple.
-
-        The returned tuple is used by the Console class to validate incoming log paths.
-        """
+    LOG = ".log"
+    TXT = ".txt"
+    JSON = ".json"
 
 class Console:
     """After initial configuration, provides methods for terminal-printing and file-logging messages and errors.
@@ -140,7 +140,10 @@ class Console:
             handled by the logging backend. For non-loguru backends, this determines if the error is raised in the first
             place or if the method only logs the error message. This option is primarily intended for runtimes that
             contain error-handling logic that has to be run in-addition to logging and tracing the error.
-
+        use_default_error_handler: Introduced in version 3.1.0. This toggle optionally overrides the error-handling
+            logic to use the default Python's error-handler even when Console is enabled and uses a valid backend. This
+            is used to support the runtimes that would prefer default Python error-handling, while still benefitting
+            from an advanced Console backend for message logging.
 
     Attributes:
         _line_width: Stores the maximum allowed text block line width, in characters.
@@ -164,34 +167,36 @@ class Console:
         _reraise: Tracks whether the class should reraise errors after they are caught and handled by the logger
             backend.
         _callback: Stores the callback function Console.error() method should call after catching the raised error.
+        _use_default_error_handler: Tracks whether the class should use the default Python error-handler.
 
     Raises:
         ValueError: If any of the provided log file paths is not valid. If the input line_width number is not valid.
             If the input logger backend is not one of the supported backends.
     """
 
-    _line_width: Incomplete
-    _break_long_words: Incomplete
-    _break_on_hyphens: Incomplete
-    _use_color: Incomplete
-    _debug_terminal: Incomplete
-    _debug_file: Incomplete
-    _message_terminal: Incomplete
-    _message_file: Incomplete
-    _error_terminal: Incomplete
-    _error_file: Incomplete
-    _valid_extensions: Incomplete
-    _debug_log_path: Incomplete
-    _message_log_path: Incomplete
-    _error_log_path: Incomplete
+    _line_width: int
+    _break_long_words: bool
+    _break_on_hyphens: bool
+    _use_color: bool
+    _debug_terminal: bool
+    _debug_file: bool
+    _message_terminal: bool
+    _message_file: bool
+    _error_terminal: bool
+    _error_file: bool
+    _use_default_error_handler: bool
+    _valid_extensions: tuple[str, ...]
+    _debug_log_path: Path | None
+    _message_log_path: Path | None
+    _error_log_path: Path | None
     _backend: Incomplete
-    _reraise: Incomplete
-    _callback: Incomplete
+    _reraise: bool
+    _callback: Callable[[], Any] | None
     _auto_handles: Incomplete
     _is_enabled: bool
     def __init__(
         self,
-        logger_backend: Literal[LogBackends.LOGURU, LogBackends.CLICK] = ...,
+        logger_backend: LogBackends | str = ...,
         debug_log_path: Path | str | None = None,
         message_log_path: Path | str | None = None,
         error_log_path: Path | str | None = None,
@@ -209,6 +214,7 @@ class Console:
         error_terminal: bool = True,
         error_file: bool = False,
         reraise_errors: bool = False,
+        use_default_error_handler: bool = False,
     ) -> None: ...
     def __repr__(self) -> str:
         """Returns a string representation of the class instance."""
@@ -346,6 +352,11 @@ class Console:
         """Returns True if Console.error() method should reraise logged error messages."""
     def set_reraise(self, enabled: bool) -> None:
         """Sets the value of the 'reraise' attribute to the specified value."""
+    @property
+    def use_default_error_handler(self) -> bool:
+        """Returns True if Console.error() method should use the default Python error handler."""
+    def set_use_default_error_handler(self, enabled: bool) -> None:
+        """Sets the value of the 'use_default_error_handler' attribute to the specified value."""
     def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the class configuration parameters.
 
@@ -361,7 +372,7 @@ class Console:
         Returns:
             Formatted text message (augmented with newline and other service characters as necessary).
         """
-    def echo(self, message: str, level: LogLevel = ...) -> bool:
+    def echo(self, message: str, level: str | LogLevel = ...) -> bool:
         """Formats the input message according to the class configuration and outputs it to the terminal, file, or both.
 
         In a way, this can be seen as a better 'print'. Specifically, in addition to printing the text to the terminal,
@@ -395,7 +406,7 @@ class Console:
         arguments and Console backend configuration.
 
         Notes:
-            When console is enabled, this method can be used to flexibly handle raise errors in-place. For example, it
+            When console is enabled, this method can be used to flexibly handle raised errors in-place. For example, it
             can be used to redirect errors to the log file, provides enhanced traceback and analysis data (for loguru
             backend only) and can even execute callback functions after logging the error
             (also for loguru backend only.)
@@ -404,6 +415,10 @@ class Console:
             logging, or both are allowed. For loguru backend, the decision depends on whether the necessary handles
             have been added (or removed) from the backend. This can either be done manually or as a co-routine of the
             setter methods used to enable and disable certain types of outputs.
+
+            Since version 3.1.0, if the Console class is configured to use default error handlers, the method will use
+            the default 'raise' statement even when the Console is enabled and configured to use one of the supported
+            backends.
 
         Args:
             message: The error-message to use for the raised error.

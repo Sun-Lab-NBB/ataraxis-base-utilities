@@ -5,12 +5,20 @@ API documentation: https://ataraxis-base-utilities-api-docs.netlify.app/
 Author: Ivan Kondratyev (Inkaros)
 """
 
-from .console import Console, LogLevel, LogBackends, LogExtensions, default_callback, ensure_directory_exists
+from .console import (
+    Console,
+    LogLevel,
+    LogBackends,
+    LogExtensions,
+    pass_callback,
+    default_callback,
+    ensure_directory_exists,
+)
 from .standalone_methods import ensure_list, error_format, chunk_iterable, check_condition, compare_nested_tuples
 
 # Preconfigures and exposes Console class instance as a variable, similar to how Loguru exposes logger. This instance
 # can be used globally instead of defining a custom console variable.
-console: Console = Console(logger_backend=LogBackends.LOGURU, auto_handles=True)
+console: Console = Console(logger_backend=LogBackends.LOGURU, auto_handles=True, use_default_error_handler=True)
 
 __all__ = [
     "console",
@@ -25,4 +33,5 @@ __all__ = [
     "default_callback",
     "ensure_directory_exists",
     "error_format",
+    "pass_callback",
 ]

@@ -59,8 +59,7 @@ def test_ensure_list(input_item: Any, expected: list) -> None:
 def test_ensure_list_error() -> None:
     """Verifies that ensure_list() correctly handles unsupported input types."""
     message = (
-        f"Unable to convert input item to a Python list, as items of type {type(object()).__name__} "
-        f"are not supported."
+        f"Unable to convert input item to a Python list, as items of type {type(object()).__name__} are not supported."
     )
     with pytest.raises(TypeError, match=error_format(message)):
         # noinspection PyTypeChecker

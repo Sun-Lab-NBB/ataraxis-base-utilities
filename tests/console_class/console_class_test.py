@@ -123,7 +123,7 @@ def test_console_initialization_errors(backend, temp_dir) -> None:
     with pytest.raises(ValueError, match=error_format(message)):
         Console(logger_backend=backend, line_width=0)
 
-    valid_extensions: tuple[str, ...] = LogExtensions.values()
+    valid_extensions: tuple[str, ...] = tuple(LogExtensions)
 
     # Uses a non-supported 'zipp' extension to trigger ValueErrors.
     message = (
@@ -151,9 +151,10 @@ def test_console_initialization_errors(backend, temp_dir) -> None:
     # Tests invalid logger backend input
     message = (
         f"Invalid 'logger_backend' argument encountered when instantiating Console class instance. "
-        f"Expected a member of the LogBackends enumeration, but encountered {'invalid_backend'}."
+        f"Expected a member of the LogBackends enumeration, but instead encountered {'invalid_backend'} of type str."
     )
     with pytest.raises(ValueError, match=error_format(message)):
+        # noinspection PyTypeChecker
         Console(logger_backend="invalid_backend")
 
 

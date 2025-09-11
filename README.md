@@ -18,7 +18,7 @@ This library is one of the two 'base' dependency libraries used by every other S
 [ataraxis-automation](https://github.com/Sun-Lab-NBB/ataraxis-automation)). It aggregates common utility functions 
 that are expected to be shared and reused by many other lab projects, such as message and error logging. This library is
 designed to avoid re-implementing the same set of utility features for every lab project. This is important, since most
-of our codebases employ a highly modular and decentralized design with many independent subprojects dynamically 
+of our codebases use a highly modular and decentralized design with many independent subprojects dynamically 
 assembled into functional pipelines. Generally, any class or function copied with minor modifications into five 
 or more Sun Lab projects is a good candidate for inclusion into this library.
 
@@ -168,8 +168,8 @@ console.error(message="ValueError", error=ValueError)
 All console methods format input messages to fit the default width-limit of 120 characters. This was chosen as it is 
 both likely to fit into any modern terminal and gives us a little more space than the default legacy '80' limit used by
 many projects. The formatting takes into consideration that 'loguru' backend adds some ID information to the beginning 
-of each method, so the text should look good regardless of the backend used. In the case that you want to use console
-as a formatter, rather than a message processor, you can use Console.format_message() method:
+of each method, so the text should look good regardless of the backend used. In the case that you want to use the 
+console as a formatter, rather than a message processor, you can use the Console.format_message() method:
 ```
 from ataraxis_base_utilities import console
 
@@ -191,9 +191,9 @@ print(formatted_message)
 ```
 
 #### Configuring console: enable / disable
-By default, console starts 'disabled.' You can enable or disable it at any time! When using console to add functionality
-to libraries, do not enable() the console. This way, you both add console functionality to your library and allow the 
-end-user to decide how much output they want to see and in what format.
+By default, the console starts 'disabled.' You can enable or disable it at any time! When using console to add 
+functionality to libraries, do not enable() the console. This way, you both add console functionality to your library 
+and allow the end-user to decide how much output they want to see and in what format.
 ```
 from ataraxis_base_utilities import console, LogLevel
 
@@ -206,7 +206,7 @@ assert not console.is_enabled
 ```
 
 #### Configuring console: output control
-By default, console is configured to print information and error messages to the terminal. However, you can 
+By default, the console is configured to print information and error messages to the terminal. However, you can 
 flexibly set what kind of messages it processes and where they go. To do so, you can use the extensive set of setter and
 getter methods.
 ```
@@ -244,8 +244,8 @@ assert not console.error_file
 
 #### Configuring console: log paths
 For a message to be written to a log file, it is not enough to just 'enable' that output type. Additionally, you need 
-to provide console with a path to the log file to write to and, if it does not exist, create. This is done through a 
-separate set of setter and getter methods:
+to provide the console with a path to the log file to write to and, if it does not exist, create. This is done through 
+a separate set of setter and getter methods:
 ```
 from ataraxis_base_utilities import console, LogExtensions
 from pathlib import Path
@@ -380,10 +380,10 @@ example_console = Console(
 #### Loguru Console: add_handles()
 This section only applies to Console using 'loguru' backend, which includes the default 'console' variable. Loguru 
 relies on its 'logger' variable to be provided with handles that determine how to process messages. Similarly, Console
-comes with add_handles() method that can be called to replace active handles with console-specific handles. Note, since
-'logger' is shared across all libraries and modules, editing handles can interfere with any other class that uses 
-logger. Default console is written with the assumption that nothing else uses logger and, by default, removes all active
-handles before adding its custom handles before adding its custom handles. Not only this, but it also calls 
+comes with an add_handles() method that can be called to replace active handles with console-specific handles. Note, 
+since 'logger' is shared across all libraries and modules, editing handles can interfere with any other class that uses 
+logger. The default console is written with the assumption that nothing else uses logger and, by default, removes all 
+active handles before adding its custom handles before adding its custom handles. Not only this, but it also calls 
 add_handles() automatically when initialized or when any of its attributes are edited.
 ```
 from ataraxis_base_utilities import Console, LogBackends, LogExtensions
@@ -417,11 +417,11 @@ do not call add_handles() or enable() methods. The only exception to this rule i
 (cli, benchmark, script) that is known to be the highest hierarchy (nothing else imports your code, it imports 
 everything else).
 
-To facilitate correct usage, the library exposes 'console' variable preconfigured to use Loguru backend and is 
+To facilitate correct usage, the library exposes the 'console' variable preconfigured to use Loguru backend and is 
 not enabled by default. You can use this variable to add Console-backed printing and logging functionality to your 
 library. Whenever your library is imported, the end-user can then enable() and add_handles() using the same 'console'
 variable, which will automatically work for all console-based statements across all libraries. This way, the exact 
-configuration is left up to end-user, but your code will still raise errors and can be debugged using custom 
+configuration is left up to the end-user, but your code will still raise errors and can be debugged using custom 
 logging configurations.
 
 ### Standalone Methods
@@ -456,9 +456,9 @@ assert out_list == [1]
 ```
 
 #### Compare nested tuples
-This method is designed to compliment numpy 'array_equal' method to provide a way of comparing two-dimensional (nested)
-tuples. The method allows comparing Python tuple with multiple element datatypes and uneven sub-tuple topologies: the 
-functionality that is not present in the array_equal() method.
+This method is designed to compliment the numpy 'array_equal' method to provide a way of comparing two-dimensional 
+(nested) tuples. The method allows comparing Python tuple with multiple element datatypes and uneven sub-tuple 
+topologies: the functionality that is not present in the array_equal() method.
 
 ```
 from ataraxis_base_utilities import compare_nested_tuples
@@ -523,7 +523,7 @@ assert np.array_equal(output, [True, True, True])
 ```
 
 #### Ensure directory exists
-This method was originally defined as private method for the Console class, but it is now a public standalone method. 
+This method was originally defined as a private method for the Console class, but it is now a public standalone method. 
 This method checks whether the directory portion of the input path exists and, if not, it creates the necessary 
 directory hierarchy. This is helpful when working with files, as files cannot be created if their root directory does
 not exist.
@@ -578,7 +578,7 @@ that were used during development from the included .yml files.
        call ```tox -e import``` to automatically import the os-specific development environment included with the
        source code in your local conda distribution. Alternatively, you can use ```tox -e create``` to create the 
        environment from scratch and automatically install the necessary dependencies using pyproject.toml file. See 
-       [environments](#environments) section for other environment installation methods.
+       the [environments](#environments) section for other environment installation methods.
     2. Run ```python -m pip install .'[dev]'``` command to install development dependencies and the library using 
        pip. On some systems, you may need to use a slightly modified version of this command: 
        ```python -m pip install .[dev]```.
@@ -617,7 +617,7 @@ For more information, you can also see the 'Usage' section of the
 ### Environments
 
 All environments used during development are exported as .yml files and as spec.txt files to the [envs](envs) folder.
-The environment snapshots were taken on each of the three explicitly supported OS families: Windows 11, OSx (M1) 15.1
+The environment snapshots were taken on each of the three explicitly supported OS families: Windows 11, OSx (M1) 15.1,
 and Linux Ubuntu 24.04 LTS.
 
 **Note!** Since the OSx environment was built for an M1 (Apple Silicon) platform, it may not work on Intel-based 

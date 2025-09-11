@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from ataraxis_base_utilities import ensure_list, error_format, chunk_iterable, check_condition, compare_nested_tuples
+from ataraxis_base_utilities import ensure_list, error_format, chunk_iterable
 
 
 # noinspection PyRedundantParentheses
@@ -59,7 +59,8 @@ def test_ensure_list(input_item: Any, expected: list) -> None:
 def test_ensure_list_error() -> None:
     """Verifies that ensure_list() correctly handles unsupported input types."""
     message = (
-        f"Unable to convert input item to a Python list, as items of type {type(object()).__name__} are not supported."
+        f"Unable to convert the input item to a Python list, as items of type {type(object()).__name__} are not "
+        f"supported."
     )
     with pytest.raises(TypeError, match=error_format(message)):
         # noinspection PyTypeChecker
@@ -112,101 +113,3 @@ def test_chunk_iterable_error() -> None:
     )
     with pytest.raises(ValueError, match=error_format(message)):
         list(chunk_iterable(iterable=[1, 2, 3], chunk_size=-4))
-
-
-@pytest.mark.parametrize(
-    "checked_value, condition_value, condition_operator, expected",
-    [
-        (5, 3, ">", True),
-        (5, 3, "<", False),
-        (5, 5, ">=", True),
-        (5, 5, "<=", True),
-        (5, 5, "==", True),
-        (5, 3, "!=", True),
-        ([1, 2, 3], 2, ">", (False, False, True)),
-        ([1, 2, 3], 2, "<", (True, False, False)),
-        ([1, 2, 3], 2, ">=", (False, True, True)),
-        ([1, 2, 3], 2, "<=", (True, True, False)),
-        ([1, 2, 3], 2, "==", (False, True, False)),
-        ([1, 2, 3], 2, "!=", (True, False, True)),
-        (np.array([1, 2, 3]), 2, ">", np.array([False, False, True])),
-        (np.array([1, 2, 3]), 2, "<", np.array([True, False, False])),
-        (np.array([1, 2, 3]), 2, ">=", np.array([False, True, True])),
-        (np.array([1, 2, 3]), 2, "<=", np.array([True, True, False])),
-        (np.array([1, 2, 3]), 2, "==", np.array([False, True, False])),
-        (np.array([1, 2, 3]), 2, "!=", np.array([True, False, True])),
-        (np.int32(5), 3, ">", np.bool_(True)),
-        (np.int32(5), 3, "<", np.bool_(False)),
-        (np.int32(5), 5, ">=", np.bool_(True)),
-        (np.int32(5), 5, "<=", np.bool_(True)),
-        (np.int32(5), 5, "==", np.bool_(True)),
-        (np.int32(5), 3, "!=", np.bool_(True)),
-    ],
-)
-def test_check_condition(checked_value: Any, condition_value: Any, condition_operator: str, expected: Any) -> None:
-    """Verifies the functioning of the check_condition() method for all supported operators and various input types.
-
-    Tests the following scenarios:
-        - 0-5: Python scalar comparisons with all operators (>, <, >=, <=, ==, !=)
-        - 6-11: List comparisons with all operators
-        - 12-17: NumPy array comparisons with all operators
-        - 18-23: NumPy scalar comparisons with all operators
-
-    For each input type (Python scalar, list, NumPy array, NumPy scalar), all six supported operators are tested:
-    '>', '<', '>=', '<=', '==', '!='.
-    """
-    # noinspection PyTypeChecker
-    result = check_condition(checked_value, condition_value, condition_operator)
-    if isinstance(result, np.ndarray):
-        assert np.array_equal(result, expected)
-    else:
-        assert result == expected
-
-
-def test_check_condition_error() -> None:
-    """Verifies that check_condition() correctly handles invalid unsupported input types."""
-    message = f"Unsupported checked_value "
-
-    with pytest.raises(TypeError, match=error_format(message)):
-        # noinspection PyTypeChecker
-        check_condition(checked_value=object(), condition_value=1, condition_operator=">")
-
-    # Also verifies the handling of unsupported operator inputs
-    message = f"Unsupported operator symbol ({'!>'}) encountered when checking condition "
-    with pytest.raises(KeyError, match=error_format(message)):
-        # noinspection PyTypeChecker
-        check_condition(checked_value=11, condition_value=11, condition_operator="!>")
-
-
-@pytest.mark.parametrize(
-    "x, y, expected",
-    [
-        (((1, 2), (3, 4)), ((1, 2), (3, 4)), True),
-        (((1, 2), (3, 4)), ((1, 2), (3, 5)), False),
-        ((("a", "b"), ("c",)), (("a", "b"), ("c",)), True),
-        ((("a", "b"), ("c",)), (("a", "b"), ("d",)), False),
-    ],
-)
-def test_compare_nested_tuples(x: tuple, y: tuple, expected: bool) -> None:
-    """Verifies the functioning of the compare_nested_tuples() method for various nested tuple scenarios.
-
-    Tests the following scenarios:
-        - 0 Identical nested tuples with numbers
-        - 1 Different nested tuples with numbers
-        - 2 Identical nested tuples with strings and different inner tuple lengths
-        - 3 Different nested tuples with strings and different inner tuple lengths
-    """
-    assert compare_nested_tuples(x, y) == expected
-
-
-def test_compare_nested_tuples_error() -> None:
-    """Verifies that compare_nested_tuples() correctly handles non-tuple inputs."""
-
-    message = (
-        f"Unsupported type encountered when comparing tuples. Either x ({type([1, 2]).__name__}) or y "
-        f"({type((1, 2)).__name__}) is not a tuple."
-    )
-
-    with pytest.raises(TypeError, match=error_format(message)):
-        # noinspection PyTypeChecker
-        compare_nested_tuples(x=[1, 2], y=(1, 2))

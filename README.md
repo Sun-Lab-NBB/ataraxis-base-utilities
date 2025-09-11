@@ -455,24 +455,6 @@ assert isinstance(out_list, list)
 assert out_list == [1]
 ```
 
-#### Compare nested tuples
-This method is designed to compliment the numpy 'array_equal' method to provide a way of comparing two-dimensional 
-(nested) tuples. The method allows comparing Python tuple with multiple element datatypes and uneven sub-tuple 
-topologies: the functionality that is not present in the array_equal() method.
-
-```
-from ataraxis_base_utilities import compare_nested_tuples
-
-# The method works for different sub-tuple shapes and element datatypes
-tuple_1 = (1, 2, ("text", True))
-tuple_2 = (1, 2, ("text", True))
-assert compare_nested_tuples(x=tuple_1, y=tuple_2)
-
-# The method takes element datatype into consideration when comparing tuples!
-tuple_2 = (1, '2', ("text", True))
-assert not compare_nested_tuples(x=tuple_1, y=tuple_2)
-```
-
 #### Chunk iterable
 This method converts input iterables into chunks of the requested size. Primarily, this is helpful when load-balancing 
 data for parallel processing and similar operations.
@@ -498,28 +480,6 @@ chunk_generator = chunk_iterable(iterable=numpy_x, chunk_size=3)
 expected_chunks = (np.array([1, 2, 3]), np.array([4, 5, 6]), np.array([7]))
 for num, chunk in enumerate(chunk_generator):
     assert np.array_equal(expected_chunks[num], chunk)
-```
-
-#### Check condition
-This method provides a generalized logic comparison interface that functions similar to using the logical operators, 
-such as '==' directly. The main purpose of this method is to provide an interface that behaves similarly regardless of 
-input. This is useful in cases such as verifying the output of a function that can return multiple different datatypes.
-
-```
-import numpy as np
-from ataraxis_base_utilities import check_condition
-
-# The method can be considered a wrapper around common logical operators used for value comparison:
-assert check_condition(checked_value=3, condition_value=3, condition_operator='==')
-assert check_condition(checked_value='One', condition_value='Two', condition_operator='!=')
-
-# However, it abstracts away working with different types of inputs, such as numpy arrays:
-output = check_condition(checked_value=np.array([1, 2, 3]), condition_value=1, condition_operator='==')
-assert np.array_equal(output, np.array([True, False, False]))
-
-# And python iterables:
-output = check_condition(checked_value=[1, 1, 1], condition_value=1, condition_operator='==')
-assert np.array_equal(output, [True, True, True])
 ```
 
 #### Ensure directory exists

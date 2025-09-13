@@ -1,6 +1,7 @@
 # ataraxis-base-utilities
 
-Python library that provides a minimalistic set of shared utility functions used to support most other Sun Lab projects.
+A Python library that provides a minimalistic set of shared utility functions used to support most other Sun Lab 
+projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-base-utilities)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-base-utilities)
@@ -10,31 +11,24 @@ Python library that provides a minimalistic set of shared utility functions used
 ![PyPI - License](https://img.shields.io/pypi/l/ataraxis-base-utilities)
 ![PyPI - Status](https://img.shields.io/pypi/status/ataraxis-base-utilities)
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ataraxis-base-utilities)
+
 ___
 
 ## Detailed Description
 
 This library is one of the two 'base' dependency libraries used by every other Sun Lab project (the other being 
-[ataraxis-automation](https://github.com/Sun-Lab-NBB/ataraxis-automation)). It aggregates common utility functions 
-that are expected to be shared and reused by many other lab projects, such as message and error logging. This library is
-designed to avoid re-implementing the same set of utility features for every lab project. This is important, since most
-of our codebases use a highly modular and decentralized design with many independent subprojects dynamically 
-assembled into functional pipelines. Generally, any class or function copied with minor modifications into five 
-or more Sun Lab projects is a good candidate for inclusion into this library.
+[ataraxis-automation](https://github.com/Sun-Lab-NBB/ataraxis-automation)). It aggregates shared utility 
+functions, such as message and error logging, reused across all other Sun lab projects.
 
-Despite a strong focus on supporting Sun Lab projects, this library can be used in non-lab projects with minor 
-refactoring. Specifically, anyone willing to reuse this library in their project may need to adjust the default values
-and configurations used throughout this library to match their specific needs. Otherwise, it should be readily 
-integrable with any other project due to its minimalistic design (both in terms of features and dependencies).
 ___
 
 ## Features
 
-- Supports Windows, Linux, and OSx.
-- Loguru-based Console class that provides message and logging functionality.
-- Frequently re-implemented utility method, such as a method that ensures the parent directory of a file path exists.
+- Supports Windows, Linux, and macOS.
+- Provides a unified approach to message and error formatting, printing, and logging through the Console class.
 - Pure-python API.
 - GPL 3 License.
+
 ___
 
 ## Table of Contents
@@ -48,34 +42,35 @@ ___
 - [Authors](#authors)
 - [License](#license)
 - [Acknowledgements](#Acknowledgments)
+
 ___
 
 ## Dependencies
 
 For users, all library dependencies are installed automatically for all supported installation methods 
-(see [Installation](#installation) section). For developers, see the [Developers](#developers) section for 
+(see the [Installation](#installation) section). For developers, see the [Developers](#developers) section for 
 information on installing additional development dependencies.
+
 ___
 
 ## Installation
 
 ### Source
 
-1. Download this repository to your local machine using your preferred method, such as git-cloning. Optionally, use one
-   of the stable releases that include precompiled binary wheels in addition to source code.
-2. ```cd``` to the root directory of the project using your command line interface of choice.
+1. Download this repository to the local machine using the preferred method, such as git-cloning. Use one of the stable 
+   releases that include precompiled binary and source code distribution (sdist) wheels.
+2. ```cd``` to the root directory of the project.
 3. Run ```python -m pip install .``` to install the project. Alternatively, if using a distribution with precompiled
    binaries, use ```python -m pip install WHEEL_PATH```, replacing 'WHEEL_PATH' with the path to the wheel file.
 
-### PIP
+### pip
 
-Use the following command to install the library using PIP: ```pip install ataraxis-base-utilities```
+Use the following command to install the library using pip: ```pip install ataraxis-base-utilities```.
+
 ___
 
 ## Usage
-This section is broken into subsections for each exposed utility class or module. For each, it progresses from a 
-minimalistic example and / or 'quickstart' to detailed notes on nuanced class functionality 
-(if the class has such functionality).
+
 
 ### Console
 The Console class provides message and error display (via terminal) and logging (to files) functionality. Primarily, 
@@ -205,211 +200,6 @@ console.disable()
 assert not console.is_enabled
 ```
 
-#### Configuring console: output control
-By default, the console is configured to print information and error messages to the terminal. However, you can 
-flexibly set what kind of messages it processes and where they go. To do so, you can use the extensive set of setter and
-getter methods.
-```
-from ataraxis_base_utilities import console, LogLevel
-console.enable()
-
-# Consider debug message printing, which is disabled by default:
-console.echo('Debug', level=LogLevel.DEBUG)
-
-# If we enable debug printing, the message will show up in terminal as expected:
-console.set_debug_terminal(True)
-console.echo('Debug', level=LogLevel.DEBUG)
-
-# To verify if a particular output format for a message type is enabled, you can use the getter method:
-assert console.debug_terminal
-assert not console.error_file
-
-# The class allows you to flexibly configure terminal-printing and file-logging for Debug-, Info to Warning and Error+
-# messages. The default 'console' configuration can be obtained by using the following setter methods and arguments:
-console.set_debug_terminal(False)
-console.set_debug_file(False)
-console.set_message_terminal(True)
-console.set_message_file(False)
-console.set_error_terminal(True)
-console.set_error_file(False)
-
-# Note, 'getter' properties are named identical to setter methods, minus the 'set_' part:
-assert not console.debug_terminal
-assert not console.debug_file
-assert console.message_terminal
-assert not console.message_file
-assert console.error_terminal
-assert not console.error_file
-```
-
-#### Configuring console: log paths
-For a message to be written to a log file, it is not enough to just 'enable' that output type. Additionally, you need 
-to provide the console with a path to the log file to write to and, if it does not exist, create. This is done through 
-a separate set of setter and getter methods:
-```
-from ataraxis_base_utilities import console, LogExtensions
-from pathlib import Path
-
-# By default, the console is not provided with a path to the message log file and does not support writing messages to
-# log file.
-assert console.message_log_path is None
-
-# You can provide it with a custom log file to enable logging functionality:
-example_path = f"example{LogExtensions.LOG}"
-console.set_message_log_path(Path(example_path))
-assert console.message_log_path == Path(example_path)
-
-# Note that the class supports only a set of file-extensions. For your convenience, they are available from
-# LogExtensions class:
-log_file = Path(f"example{LogExtensions.LOG}")
-text_file = Path(f"example{LogExtensions.TXT}")
-json_file = Path(f"example{LogExtensions.JSON}")
-
-# As with other class configuration attributes, you can flexibly configure log files for each of the supported message
-# groups:
-console.set_message_log_path(log_file)
-console.set_debug_log_path(text_file)
-console.set_error_log_path(json_file)
-
-# You can retrieve the used log file path at any time using an appropriate getter property:
-log_file = console.message_log_path
-text_file = console.debug_log_path
-json_file = console.error_log_path
-```
-
-#### Configuring console: error runtime control
-Console.error() significantly expands your ability to control how errors are handled. Specifically, its behavior can 
-range from generating default Python tracebacks to redirecting errors to log files to executing custom error callback
-functions. Note, most of this functionality is only supported by our default 'loguru' backend.
-```
-from ataraxis_base_utilities import console, default_callback
-console.enable()
-
-# By default, the console is configured to call sys.exit() as a callback to prevent providing two error traces: one from
-# loguru and the other from Python. To prevent this behavior, set console callback to None:
-console.set_callback(None)
-
-# This prints the error to terminal, but does not abort runtime.
-try:
-    console.error("Test error", RuntimeError)
-except RuntimeError:
-    print("You will not see this.")
-
-# By default, console will not re-raise the logged error as a Python error.
-assert not console.reraise
-
-# However, if your use case needs this functionality, you can always enable it:
-console.set_reraise(True)
-
-try:
-    console.error("Test error", ValueError)
-except ValueError:
-    print("The error was re-raised as expected.")
-
-
-# WARNING! Callbacks, when provided, are executed before re-raising the error. If callback calls runtime-breaking
-# functions, such as sys.exit(), it will interfere with error re-raising.
-def benign_callback():
-    print('I do not cause a runtime error.')
-
-
-console.set_callback(benign_callback)
-try:
-    console.error("Test error", TypeError)
-except TypeError:
-    print("Benign callback did not interfere with raising the error.")
-
-# Default callback will, however, clash with 'reraise' functionality:
-console.set_callback(default_callback)
-try:
-    # This will abort the runtime through 'default_callback' calling sys.exit().
-    console.error("Test error", KeyError)
-except KeyError:
-    print("This will not be displayed.")
-```
-
-#### Custom Console instances:
-While this class is designed ot be used through the 'console' variable, you can also instantiate and use a custom 
-Console class instance. Unlike 'console' variable, this class will not be shared across all modules and libraries, 
-potentially allowing to isolate its configuration from the rest of your project. Note, since 'LOGURU' backend uses the 
-shared 'logger,' instantiating a new CConsole class does not automatically guarantee isolation!
-```
-from ataraxis_base_utilities import Console, LogBackends, LogExtensions
-
-# The most important advantage of using the custom console is the ability to specify the backend other than the default
-# 'LOGURU' backend. # All supported backends are available through the LogBackends enumeration.
-click_console = Console(logger_backend=LogBackends.CLICK)
-
-# Additionally, you can customize the formatting applied to messages:
-format_console = Console(line_width=200, break_long_words=True, break_on_hyphens=True, use_color=False)
-
-# Finally, you can make console safer by overriding the 'auto_handles' attribute to prevent 'LOGURU' consoles from 
-# automatically editing the shared 'logger' instance handles. To learn more about handles, see 'add_handles()' section.
-loguru_console = Console(logger_backend=LogBackends.LOGURU, auto_handles=False)
-
-
-# All attributes discussed in previous sections can be set by initialization arguments to the Console class:
-def custom_callback():
-    """Custom callback function"""
-    pass
-
-
-debug_log_path = f"debug{LogExtensions.LOG}"
-
-example_console = Console(
-        logger_backend=LogBackends.LOGURU,
-        debug_log_path=debug_log_path,
-        message_log_path=None,
-        error_log_path=None,
-        line_width=120,
-        error_callback=custom_callback,
-        auto_handles=True,
-        break_long_words=True,
-        break_on_hyphens=True,
-        use_color=False,
-        debug_terminal=True,
-        debug_file=True,
-        message_terminal=False,
-        message_file=True,
-        error_terminal=False,
-        error_file=True,
-        reraise_errors=True
-    )
-```
-
-#### Loguru Console: add_handles()
-This section only applies to Console using 'loguru' backend, which includes the default 'console' variable. Loguru 
-relies on its 'logger' variable to be provided with handles that determine how to process messages. Similarly, Console
-comes with an add_handles() method that can be called to replace active handles with console-specific handles. Note, 
-since 'logger' is shared across all libraries and modules, editing handles can interfere with any other class that uses 
-logger. The default console is written with the assumption that nothing else uses logger and, by default, removes all 
-active handles before adding its custom handles before adding its custom handles. Not only this, but it also calls 
-add_handles() automatically when initialized or when any of its attributes are edited.
-```
-from ataraxis_base_utilities import Console, LogBackends, LogExtensions
-
-# By default, uses loguru backend
-console = Console(auto_handles=False)
-console.enable()
-
-# Consoles that are not initialized with auto_handles=True require manually calling add_handles() method before calling
-# echo() or error() methods.
-console.add_handles(remove_existing_handles=False)  # This call will NOT remove default handles
-
-# This should produce two messages: one using the default 'console' variable handle that replaced 'logger' handle and
-# another using the custom handle we added with add_handles() call.
-console.echo("Hello, World!")
-
-# To reset all handles, we cna use the default add_handles() argument:
-console.add_handles()
-console.echo("Now there is only one")
-
-# Another important feature only available through 'add_handles' is the ability to 'enqueue' messages. This helps with
-# using console from multiple processes by passing all messages through a shared processing queue.
-console.add_handles(enqueue=True)
-console.echo("The API remains the same though!")
-```
-
 #### Additional notes on usage:
 Generally, Console class is designed to be used across many libraries that may also be dependent on each other. 
 Therefore, it should be used similar to how it is advised to use Loguru for logging: when using Console in a library, 
@@ -429,97 +219,13 @@ The standalone methods are a broad collection of utility functions that either a
 common data manipulations or provide novel functionality not commonly available through popular Python libraries used 
 by our projects. Generally, these methods are straightforward to use and do not require detailed explanation:
 
-#### Ensure list
-
-As the name implies, this method ensures that the input is a Python list. If the input is not a Python list, the method
-converts it into a list. If conversion fails, the method raises a ValueError.
-
-```
-import numpy as np
-from ataraxis_base_utilities import ensure_list
-
-# Ensures and, if necessary, converts inputs to the Python list type:
-out_list = ensure_list(input_item=(1, 2, 3, 4))
-assert isinstance(out_list, list)
-assert out_list == [1, 2, 3, 4]
-
-# It works for a wide range of inputs numpy arrays...
-numpy_array = np.array([1, 2, 3, 4])
-out_list = ensure_list(input_item=numpy_array)
-assert isinstance(out_list, list)
-assert out_list == [1, 2, 3, 4]
-
-# And scalars
-out_list = ensure_list(input_item=1)
-assert isinstance(out_list, list)
-assert out_list == [1]
-```
-
-#### Chunk iterable
-This method converts input iterables into chunks of the requested size. Primarily, this is helpful when load-balancing 
-data for parallel processing and similar operations.
-```
-
-import numpy as np
-from ataraxis_base_utilities import chunk_iterable
-
-# Note, while the method tries to produce equally sized chunks, the final chunk may contain fewer items if the input
-# iterable is not evenly divisible by chunk size. The method returns a Generator that can be used to yield chunks:
-x = [1, 2, 3, 4, 5, 6, 7]
-chunk_generator = chunk_iterable(iterable=x, chunk_size=2)
-
-expected_chunks = ((1, 2), (3, 4), (5, 6), (7,))
-for num, chunk in enumerate(chunk_generator):
-    assert expected_chunks[num] == chunk
-
-# The method works for both python iterables and one-dimensional numpy arrays. For numpy inputs, it returns numpy
-# arrays as outputs:
-numpy_x = np.array(x)
-chunk_generator = chunk_iterable(iterable=numpy_x, chunk_size=3)
-
-expected_chunks = (np.array([1, 2, 3]), np.array([4, 5, 6]), np.array([7]))
-for num, chunk in enumerate(chunk_generator):
-    assert np.array_equal(expected_chunks[num], chunk)
-```
-
-#### Ensure directory exists
-This method was originally defined as a private method for the Console class, but it is now a public standalone method. 
-This method checks whether the directory portion of the input path exists and, if not, it creates the necessary 
-directory hierarchy. This is helpful when working with files, as files cannot be created if their root directory does
-not exist.
-```
-import tempfile
-from pathlib import Path
-from ataraxis_base_utilities import ensure_directory_exists
-
-# Precreates a temporary directory
-with tempfile.TemporaryDirectory() as temp_dir:
-
-    # Defines a file-path that adds two subdirectories and defines a text file
-    file_path = Path(f"{temp_dir}/subfolder1/subfolder2/my_file.txt")
-
-    # Ensures that the first subfolder does not exist
-    assert not Path(f"{temp_dir}/subfolder1").exists()
-
-    # This ensures that the subdirectories exist
-    ensure_directory_exists(path=file_path)
-
-    # Ensures that both subfolders now exist
-    assert Path(f"{temp_dir}/subfolder1").exists()
-    assert Path(f"{temp_dir}/subfolder1/subfolder2").exists()
-
-    # The method does nothing if the directories already exist.
-    ensure_directory_exists(path=file_path)
-
-    # The method does not create files, it only created directories.
-    assert not file_path.exists()
-```
 ___
 
 ## API Documentation
 
 See the [API documentation](https://ataraxis-base-utilities-api-docs.netlify.app/) for the detailed description of the 
 methods and classes exposed by components of this library.
+
 ___
 
 ## Developers
@@ -608,11 +314,12 @@ most cases, this is related to their caching behavior. Despite a considerable ef
 to be problematic, in some cases it cannot or should not be eliminated. If you run into an unintelligible error with 
 any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually 
 or via a cli command is very likely to fix the issue.
+
 ___
 
 ## Versioning
 
-We use [semantic versioning](https://semver.org/) for this project. For the versions available, see the 
+This project uses [semantic versioning](https://semver.org/). For the versions available, see the 
 [tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities/tags).
 
 ---
@@ -620,21 +327,19 @@ We use [semantic versioning](https://semver.org/) for this project. For the vers
 ## Authors
 
 - Ivan Kondratyev ([Inkaros](https://github.com/Inkaros))
+- 
 ___
 
 ## License
 
 This project is licensed under the GPL3 License: see the [LICENSE](LICENSE) file for details.
+
 ___
 
 ## Acknowledgments
 
 - All Sun Lab [members](https://neuroai.github.io/sunlab/people) for providing the inspiration and comments during the
   development of this library.
-- [loguru](https://github.com/Delgan/loguru) and [click](https://github.com/pallets/click/) projects for providing
-  all low-level functionality for the Console class.
-- [numpy](https://github.com/numpy/numpy) project for providing low-level functionality for some of the 
-  standalone methods.
-- The creators of all other projects used in our development automation pipelines [see pyproject.toml](pyproject.toml).
+- The creators of all other dependencies and projects listed in the [pyproject.toml](pyproject.toml) file.
 
 ---

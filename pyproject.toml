@@ -79,7 +79,7 @@ packages = ["src/ataraxis_base_utilities"]  # Specifies the library root directo
 
 # Ruff Configuration.
 [tool.ruff]
-line-length = 120         # The maximum column length is set to 120 for this project.
+line-length = 120         # The maximum column length is set to 120 for this project
 indent-width = 4          # Same as black, indents are 4 spaces
 target-version = "py311"  # Targets the lowest supported version of python
 src = ["src"]             # The name of the source directory
@@ -99,7 +99,7 @@ lint.ignore = [
     "PLR0915",  # Sometimes complex type defenitions are necessary
     "PLR0911", # Sometimes complex return graphs are necessary
     "TID252",  # Conflicts with library import management strategy
-    "ANN401",  # INterferes with intended library behavior
+    "ANN401",  # Interferes with intended library behavior
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
     "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715

@@ -6,7 +6,8 @@ project = 'ataraxis-base-utilities'
 # noinspection PyShadowingBuiltins
 copyright = '2025, Sun (NeuroAI) lab'
 author = 'Ivan Kondratyev'
-release = importlib_metadata.version("ataraxis-base-utilities")  # Extracts the project version from the .toml file.
+# Extracts the project version from the .toml file.
+release = importlib_metadata.version("ataraxis-base-utilities")
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -44,6 +45,9 @@ simplify_optional_unions = True
 typehints_formatter = None
 typehints_use_signature = False
 typehints_use_signature_return = False
+
+# Disables the dark mode by default.
+default_dark_mode = False
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = 'sphinx_rtd_theme'  # Directs sphinx to use RTD theme

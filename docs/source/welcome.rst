@@ -1,8 +1,8 @@
 Welcome to ataraxis-base-utilities API documentation page
 =========================================================
 
-ataraxis-base-utilities is a Python library that provides a minimalistic set of shared utility functions used to
-support most other Sun (NeuroAI) lab projects.
+ataraxis-base-utilities is a Python library that provides shared utility assets used to support most other Sun
+(NeuroAI) lab projects.
 
 This library is part of the broader 'Ataraxis' science-automation project, developed in the
 `Sun (NeuroAI) lab <https://neuroai.github.io/sunlab/>`_ at Cornell University.

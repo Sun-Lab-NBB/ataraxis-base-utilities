@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ataraxis-base-utilities"
 version = "4.0.0rc1"
-description = "Provides a minimalistic set of shared utility functions used to support most other Sun Lab projects."
+description = "A Python library that provides shared utility assets used to support most other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11,<3.14"

@@ -92,11 +92,11 @@ lint.select = ["ALL"]
 
 # General ignore directives
 lint.ignore = [
-    "W291",  # Conflicts with docstring formatting
-    "C901",  # Sometimes complex functions are necessary
-    "PLR0913",  # Sometimes complex functions are necessary
-    "PLR0912",  # Sometimes complex functions are necessary
-    "PLR0915",  # Sometimes complex type defenitions are necessary
+    "W291",    # Conflicts with docstring formatting
+    "C901",    # Sometimes complex functions are necessary
+    "PLR0913", # Sometimes complex functions are necessary
+    "PLR0912", # Sometimes complex functions are necessary
+    "PLR0915", # Sometimes complex type defenitions are necessary
     "PLR0911", # Sometimes complex return graphs are necessary
     "TID252",  # Conflicts with library import management strategy
     "ANN401",  # Interferes with intended library behavior

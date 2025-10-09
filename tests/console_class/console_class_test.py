@@ -290,8 +290,9 @@ def test_log_formats():
     assert LogFormats.TXT == ".txt"
     assert LogFormats.JSON == ".json"
 
-    # Tests that it can be used in Console initialization
-    with tempfile.TemporaryDirectory() as temp_dir:
+    # Tests that it can be used in Console initialization. Note, cleanup error ignoring was added to comply with
+    # Windows not releasing file handles in time for the cleanup to work as expected.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
         log_dir = Path(temp_dir)
 
         for format_type in LogFormats:

@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-base-utilities"
-version = "5.0.1"
+version = "5.1.0"
 description = "A Python library that provides shared utility assets used to support most other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }

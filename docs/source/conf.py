@@ -4,7 +4,7 @@ import importlib_metadata
 # -- Project information -----------------------------------------------------
 project = 'ataraxis-base-utilities'
 # noinspection PyShadowingBuiltins
-copyright = '2025, Sun (NeuroAI) lab'
+copyright = '2026, Sun (NeuroAI) lab'
 author = 'Ivan Kondratyev'
 # Extracts the project version from the .toml file.
 release = importlib_metadata.version("ataraxis-base-utilities")

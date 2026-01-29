@@ -1,12 +1,12 @@
 # Defines the build system used for the project.
 [build-system]
-requires = ["hatchling==1.27.0"]
+requires = ["hatchling>=1,<2"]
 build-backend = "hatchling.build"
 
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-base-utilities"
-version = "5.0.0"
+version = "5.0.1"
 description = "A Python library that provides shared utility assets used to support most other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -127,8 +127,25 @@ convention = "google"
 # Additional, file-specific 'ignore' directives
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = [
-    "F401", # Imported but unused
-    "F403", # Wildcard imports
+    "F401",  # Imported but unused
+    "F403",  # Wildcard imports
+]
+"**/tests/**/*.py" = [
+    "S101",     # Use of assert detected
+    "SLF001",   # Private member accessed
+    "PLR2004",  # Magic value used in comparison
+    "ANN001",   # Missing type annotation for function argument
+    "ANN201",   # Missing return type annotation for public function
+    "ARG001",   # Unused function argument
+    "D202",     # No blank lines allowed after function docstring
+    "PT006",    # Wrong type passed to first argument of pytest.mark.parametrize
+    "PT014",    # Duplicate of test case
+    "PT018",    # Assertion should be broken down into multiple parts
+    "PTH123",   # open() should be replaced by Path.open()
+    "B905",     # zip() without explicit strict parameter
+    "UP003",    # Use type instead of type(...)
+    "UP015",    # Unnecessary mode argument
+    "UP035",    # Import from collections.abc instead
 ]
 
 [tool.ruff.lint.isort]

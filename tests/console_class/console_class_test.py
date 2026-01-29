@@ -1,4 +1,4 @@
-"""This module stores the tests for all classes and functions available from the console.py module."""
+"""Contains tests for classes and functions provided by the console_class.py module."""
 
 import re
 from typing import Any, Generator

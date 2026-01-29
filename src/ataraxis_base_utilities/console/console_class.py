@@ -1,10 +1,8 @@
-"""This module contains the Console class that provides message and error terminal-printing and file-logging
-functionality.
-"""
+"""Provides the Console class for message and error terminal-printing and file-logging functionality."""
 
 import sys
 from enum import StrEnum
-from types import NoneType
+from typing import NoReturn
 from pathlib import Path
 import textwrap
 from collections.abc import Callable
@@ -102,7 +100,7 @@ class Console:
         debug: bool = False,
         enqueue: bool = False,
     ) -> None:
-        # Message formating parameters
+        # Message formatting parameters.
         if line_width <= 0:
             message = (
                 f"Invalid 'line_width' argument encountered when instantiating Console class instance. "
@@ -122,7 +120,7 @@ class Console:
         self._message_log_path: Path | None = None
         self._error_log_path: Path | None = None
 
-        # If lgo directory is provided, constructs the paths to the log files using the directory path
+        # If log directory is provided, constructs the paths to the log files using the directory path.
         if log_directory is not None:
             if not isinstance(log_directory, Path):
                 message = (
@@ -220,7 +218,7 @@ class Console:
         )
 
         # Handle for debug file-writing.
-        if not isinstance(self._debug_log_path, NoneType) and debug:
+        if self._debug_log_path is not None and debug:
             logger.add(
                 self._debug_log_path,
                 filter=lambda record: record["level"].no <= logger.level("DEBUG").no,
@@ -231,7 +229,7 @@ class Console:
             )
 
         # Message file-writing handle.
-        if not isinstance(self._message_log_path, NoneType):
+        if self._message_log_path is not None:
             logger.add(
                 self._message_log_path,
                 filter=lambda record: logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
@@ -240,7 +238,7 @@ class Console:
             )
 
         # Error file-writing handle.
-        if not isinstance(self._error_log_path, NoneType):
+        if self._error_log_path is not None:
             logger.add(
                 self._error_log_path,
                 filter=lambda record: record["level"].no >= logger.level("ERROR").no,
@@ -395,7 +393,7 @@ class Console:
         self,
         message: str,
         error: Callable[..., Exception] = RuntimeError,
-    ) -> None:
+    ) -> NoReturn:
         """Raises the requested error with integrated logging.
 
         If the Console class is disabled, the method raises an exception without logging. Otherwise, if file-logging is

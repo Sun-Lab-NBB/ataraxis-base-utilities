@@ -1,6 +1,6 @@
 # ataraxis-base-utilities
 
-A Python library that provides shared utility assets used to support most other Sun Lab projects.
+Provides shared utility assets used to support most other Sun Lab projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-base-utilities)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-base-utilities)
@@ -41,7 +41,7 @@ ___
 - [Versioning](#versioning)
 - [Authors](#authors)
 - [License](#license)
-- [Acknowledgements](#Acknowledgments)
+- [Acknowledgments](#acknowledgments)
 
 ___
 
@@ -271,7 +271,7 @@ This project uses [semantic versioning](https://semver.org/). See the
 [tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities/tags) for the available project 
 releases.
 
----
+___
 
 ## Authors
 
@@ -290,5 +290,3 @@ ___
 - All Sun lab [members](https://neuroai.github.io/sunlab/people) for providing the inspiration and comments during the
   development of this library.
 - The creators of all other dependencies and projects listed in the [pyproject.toml](pyproject.toml) file.
-
----

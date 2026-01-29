@@ -1,5 +1,5 @@
-"""This module contains miscellaneous methods that either abstract away common operations to reduce boilerplate code or
-provide functionality not commonly available from popular Python libraries.
+"""Provides miscellaneous methods that abstract away common operations or provide functionality not commonly available
+from popular Python libraries.
 """
 
 import re
@@ -33,8 +33,8 @@ def ensure_list(
     # iterable types.
     if np.isscalar(input_item) or input_item is None:  # Covers Python scalars and NumPy scalars
         return [input_item]
-    # Numpy arrays are processed based on their dimensionality. This has to dow tih the fact that zero-dimensional
-    # numpy arrays are interpreted as scalars by some numpy methods and as array by others.
+    # Numpy arrays are processed based on their dimensionality. This has to do with the fact that zero-dimensional
+    # numpy arrays are interpreted as scalars by some numpy methods and as arrays by others.
     if isinstance(input_item, np.ndarray):
         # 1+-dimensional arrays are processed via tolist(), which correctly casts them to Python list format.
         if input_item.size > 1 and input_item.ndim >= 1:
@@ -100,8 +100,8 @@ def chunk_iterable(
 
     # Chunking is performed along the first dimension for both NumPy arrays and Python iterable sequences.
     # This preserves array dimensionality within chunks for NumPy arrays.
-    for chunk in range(0, len(iterable), chunk_size):
-        chunk_slice = iterable[chunk : chunk + chunk_size]
+    for start_index in range(0, len(iterable), chunk_size):
+        chunk_slice = iterable[start_index : start_index + chunk_size]
         yield np.array(chunk_slice) if isinstance(iterable, np.ndarray) else tuple(chunk_slice)
 
 

@@ -1,6 +1,6 @@
 # ataraxis-base-utilities
 
-Provides shared utility assets used to support most other Sun Lab projects.
+Provides shared utility assets used to support most other Sun (NeuroAI) lab projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-base-utilities)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-base-utilities)
@@ -27,7 +27,7 @@ ___
 - Supports Windows, Linux, and macOS.
 - Provides a unified approach to message and error formatting, printing, and logging through the Console class.
 - Provides a set of common utility functions frequently reused across other Sun lab projects.
-- GPL 3 License.
+- Apache 2.0 License.
 
 ___
 
@@ -281,7 +281,7 @@ ___
 
 ## License
 
-This project is licensed under the GPL3 License: see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2.0 License: see the [LICENSE](LICENSE) file for details.
 
 ___
 

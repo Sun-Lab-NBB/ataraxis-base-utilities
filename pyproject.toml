@@ -45,6 +45,7 @@ classifiers = [
 dependencies = [
     "loguru>=0,<1",
     "numpy>=2,<3",
+    "tqdm>=4,<5",
 ]
 
 [project.urls]
@@ -58,6 +59,9 @@ dev = [
     "tox>=4,<5",
     "uv>=0,<1",
     "tox-uv>=1,<2",
+
+    # Type Stubs
+    "types-tqdm>=4,<5",
 
     # Development Automation
     "ataraxis-automation>=8,<9",

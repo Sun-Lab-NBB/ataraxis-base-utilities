@@ -6,7 +6,7 @@ assets. See the `source code repository <https://github.com/Sun-Lab-NBB/ataraxis
 Authors: Ivan Kondratyev (Inkaros)
 """
 
-from .console import Console, LogLevel, LogFormats, console, ensure_directory_exists
+from .console import Console, LogLevel, LogFormats, ProgressBar, console, ensure_directory_exists
 from .standalone_methods import (
     ensure_list,
     error_format,
@@ -23,6 +23,7 @@ __all__ = [
     "Console",
     "LogFormats",
     "LogLevel",
+    "ProgressBar",
     "chunk_iterable",
     "console",
     "convert_array_to_bytes",

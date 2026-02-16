@@ -13,6 +13,7 @@ from ataraxis_base_utilities.console.console_class import (
     Console,
     LogLevel,
     LogFormats,
+    ProgressBar,
     console,
     ensure_directory_exists,
 )
@@ -356,3 +357,197 @@ def test_global_console_instance() -> None:
     assert console.enabled
     console.disable()
     assert not console.enabled
+
+
+def test_console_track() -> None:
+    """Verifies the functioning of the Console class track() method."""
+    test_console = Console()
+    test_console.enable()
+    test_console.enable_progress()
+
+    # Verifies that track yields all items from the iterable
+    items = list(test_console.track(iterable=range(5), description="Test"))
+    assert items == [0, 1, 2, 3, 4]
+
+    # Verifies that track works with disabled console (items still yielded, no display)
+    test_console.disable()
+    items = list(test_console.track(iterable=range(3), description="Disabled"))
+    assert items == [0, 1, 2]
+
+    # Verifies that track works with custom unit and total
+    test_console.enable()
+    items = list(test_console.track(iterable=[10, 20, 30], description="Custom", total=3, unit="batch"))
+    assert items == [10, 20, 30]
+
+    # Verifies that track works with an empty iterable
+    items = list(test_console.track(iterable=[], description="Empty"))
+    assert items == []
+
+    # Verifies that track yields items when console is enabled but progress is disabled
+    test_console.disable_progress()
+    items = list(test_console.track(iterable=range(4), description="No bars"))
+    assert items == [0, 1, 2, 3]
+
+
+def test_console_progress() -> None:
+    """Verifies the functioning of the Console class progress() context manager."""
+    test_console = Console()
+    test_console.enable()
+    test_console.enable_progress()
+
+    # Verifies basic context manager behavior with manual updates
+    with test_console.progress(total=10, description="Test", unit="step") as progress_bar:
+        assert isinstance(progress_bar, ProgressBar)
+        for _ in range(10):
+            progress_bar.update(1)
+
+    # Verifies that progress works with disabled console
+    test_console.disable()
+    with test_console.progress(total=5, description="Disabled") as progress_bar:
+        progress_bar.update(5)
+
+    # Verifies auto-close on exception (finally block ensures tqdm.close())
+    test_console.enable()
+    with pytest.raises(ValueError, match="Test exception"):
+        with test_console.progress(total=10, description="Error") as progress_bar:
+            progress_bar.update(1)
+            raise ValueError("Test exception")
+
+    # Verifies that progress works with float total
+    with test_console.progress(total=100.5, description="Float", unit="ml") as progress_bar:
+        progress_bar.update(50.25)
+
+    # Verifies that progress accepts updates when console is enabled but progress is disabled
+    test_console.disable_progress()
+    with test_console.progress(total=5, description="No bars") as progress_bar:
+        progress_bar.update(5)
+
+
+def test_progress_bar_repr() -> None:
+    """Verifies the functioning of the ProgressBar class __repr__() method."""
+    test_console = Console()
+    test_console.enable()
+    test_console.enable_progress()
+
+    with test_console.progress(total=100, description="Test") as progress_bar:
+        repr_string = repr(progress_bar)
+        assert "ProgressBar(" in repr_string
+        assert "total=100" in repr_string
+        assert "n=0" in repr_string
+
+        progress_bar.update(50)
+        repr_string = repr(progress_bar)
+        assert "n=50" in repr_string
+
+
+def test_console_temporarily_enabled() -> None:
+    """Verifies the functioning of the Console class temporarily_enabled() context manager."""
+    test_console = Console()
+
+    # Verifies that console is initially disabled
+    assert not test_console.enabled
+
+    # Verifies that temporarily_enabled enables the console within the context
+    with test_console.temporarily_enabled():
+        assert test_console.enabled
+
+    # Verifies that the console is restored to disabled state after exit
+    assert not test_console.enabled
+
+    # Verifies that a previously enabled console stays enabled after exit
+    test_console.enable()
+    with test_console.temporarily_enabled():
+        assert test_console.enabled
+    assert test_console.enabled
+
+    # Verifies state restoration on exception
+    test_console.disable()
+    with pytest.raises(RuntimeError, match="Test exception"):
+        with test_console.temporarily_enabled():
+            assert test_console.enabled
+            raise RuntimeError("Test exception")
+    assert not test_console.enabled
+
+
+def test_console_progress_toggle() -> None:
+    """Verifies the functioning of the Console class enable_progress() and disable_progress() methods."""
+    # Verifies default state: progress disabled (aligned with console starting disabled)
+    test_console = Console()
+    assert not test_console.progress_enabled
+
+    # Verifies enable_progress activates bar display
+    test_console.enable()
+    test_console.enable_progress()
+    assert test_console.progress_enabled
+    assert test_console.enabled
+
+    # Verifies disable_progress suppresses bars while echo still works
+    test_console.disable_progress()
+    assert not test_console.progress_enabled
+    assert test_console.enabled
+
+    # Verifies that track still yields items with progress disabled
+    items = list(test_console.track(iterable=range(3), description="Suppressed"))
+    assert items == [0, 1, 2]
+
+    # Verifies that progress context manager still works with progress disabled
+    with test_console.progress(total=5, description="Suppressed") as progress_bar:
+        progress_bar.update(5)
+
+    # Verifies enable_progress restores bar display
+    test_console.enable_progress()
+    assert test_console.progress_enabled
+
+    # Verifies constructor kwarg overrides default state
+    test_console_with_progress = Console(show_progress=True)
+    assert test_console_with_progress.progress_enabled
+
+    # Verifies that disabling both console and progress still yields items
+    test_console.disable()
+    test_console.disable_progress()
+    items = list(test_console.track(iterable=range(2), description="Both off"))
+    assert items == [0, 1]
+
+
+def test_console_echo_raw(capsys: pytest.CaptureFixture[str]) -> None:
+    """Verifies the functioning of the Console class echo() method with raw mode enabled."""
+    test_console = Console(debug=True)
+    test_console.enable()
+
+    # Verifies that raw mode outputs the message without loguru formatting for each level
+    raw_levels_stdout = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.SUCCESS, LogLevel.WARNING]
+    for level in raw_levels_stdout:
+        test_console.echo(message=f"Raw {level} line", level=level, raw=True)
+        captured = capsys.readouterr()
+        assert f"Raw {level} line" in captured.out
+        assert "|" not in captured.out
+
+    # Verifies that raw mode routes ERROR and CRITICAL levels to stderr
+    raw_levels_stderr = [LogLevel.ERROR, LogLevel.CRITICAL]
+    for level in raw_levels_stderr:
+        test_console.echo(message=f"Raw {level} line", level=level, raw=True)
+        captured = capsys.readouterr()
+        assert f"Raw {level} line" in captured.err
+        assert "|" not in captured.err
+
+    # Verifies that raw mode raises ValueError for invalid level
+    with pytest.raises(ValueError, match="Unable to echo the requested message"):
+        test_console.echo(message="Bad level", level="INVALID_LEVEL", raw=True)
+
+    # Verifies that raw mode respects disabled console state
+    test_console.disable()
+    test_console.echo(message="Should not appear", level=LogLevel.INFO, raw=True)
+    captured = capsys.readouterr()
+    assert "Should not appear" not in captured.out
+    assert "Should not appear" not in captured.err
+
+
+def test_progress_bar_close() -> None:
+    """Verifies the functioning of the ProgressBar class close() method when called directly."""
+    test_console = Console()
+    test_console.enable()
+    test_console.enable_progress()
+
+    with test_console.progress(total=10, description="Close test") as progress_bar:
+        progress_bar.update(5)
+        progress_bar.close()

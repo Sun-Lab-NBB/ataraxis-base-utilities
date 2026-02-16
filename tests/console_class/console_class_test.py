@@ -85,6 +85,7 @@ def test_console_initialization_errors(temp_dir: Path) -> None:
     # Tests invalid log_directory type
     # noinspection PyTypeChecker
     with pytest.raises(TypeError, match="Invalid 'log_directory' argument"):
+        # noinspection PyTypeChecker
         Console(log_directory="not_a_path")
 
 

@@ -11,22 +11,31 @@ from loguru import logger
 
 
 class LogLevel(StrEnum):
-    """Stores valid logging level arguments used to configure Console.echo() method calls."""
+    """Defines the valid logging levels for Console.echo() method calls."""
 
     DEBUG = "debug"
+    """Logs diagnostic information for development and troubleshooting."""
     INFO = "info"
+    """Logs standard informational messages."""
     SUCCESS = "success"
+    """Logs messages indicating successful operations."""
     WARNING = "warning"
+    """Logs messages indicating potential issues."""
     ERROR = "error"
+    """Logs messages indicating errors that need attention."""
     CRITICAL = "critical"
+    """Logs messages indicating critical failures."""
 
 
 class LogFormats(StrEnum):
-    """Maps file extensions to log file formats supported by the Console class."""
+    """Defines the log file formats supported by the Console class."""
 
     LOG = ".log"
+    """Standard log file format."""
     TXT = ".txt"
+    """Plain text file format."""
     JSON = ".json"
+    """JSON structured file format."""
 
 
 def ensure_directory_exists(path: Path) -> None:
@@ -37,7 +46,7 @@ def ensure_directory_exists(path: Path) -> None:
     """
     # If the path is a file (because it has an .extension suffix), ensures the parent directory of the file, if any,
     # exists.
-    if path.suffix != "":
+    if path.suffix:
         path.parent.mkdir(parents=True, exist_ok=True)
     else:
         # If the path is a directory path, ensures the directory exists.
@@ -81,8 +90,8 @@ class Console:
         _debug_log_path: Stores the path to the debug log file.
         _message_log_path: Stores the path to the message log file.
         _error_log_path: Stores the path to the error log file.
-        _is_enabled: Tracks whether logging through this class instance is enabled. When this tracker is False, echo()
-            and print() methods will have limited or no functionality.
+        _is_enabled: Tracks whether logging through this class instance is enabled. When this tracker is False, the
+            echo() method will have limited functionality.
 
     Raises:
         ValueError: If the input line_width number is not valid.
@@ -151,104 +160,8 @@ class Console:
         self._is_enabled: bool = False
 
     def __repr__(self) -> str:
-        """Returns a string representation of the class instance."""
+        """Returns a string representation of the Console instance."""
         return f"Console(enabled={self.enabled}, line_width={self._line_width})"
-
-    def _add_handles(
-        self,
-        *,
-        debug: bool = False,
-        enqueue: bool = False,
-    ) -> None:
-        """(Re)configures the local loguru 'logger' instance to use requested handles after optionally removing all
-        existing handles.
-
-        This worker method is used internally as part of class instantiation to configure the loguru backend.
-
-        Args:
-            debug: Determines whether to enable debug handles.
-            enqueue: Determines if messages are processed synchronously or asynchronously.
-        """
-        # Removes existing handles.
-        logger.remove()
-
-        # Debug terminal-printing handle.
-        if debug:
-            logger.add(
-                sys.stdout,
-                format=(
-                    "<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | "
-                    "<level>{level: <8}</level> | <level>{message}</level>"
-                ),
-                filter=lambda record: record["level"].no <= logger.level("DEBUG").no,
-                colorize=True,
-                backtrace=False,
-                diagnose=True,
-                enqueue=enqueue,
-            )
-
-        # Message terminal-printing handle.
-        # noinspection LongLine
-        logger.add(
-            sys.stdout,
-            format=(
-                "<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | "
-                "<level>{level: <8}</level> | <level>{message}</level>"
-            ),
-            filter=lambda record: logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
-            colorize=True,
-            backtrace=False,
-            diagnose=False,
-            enqueue=enqueue,
-        )
-
-        # Error terminal-printing-handle.
-        # noinspection LongLine
-        logger.add(
-            sys.stderr,
-            format=(
-                "<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | "
-                "<level>{level: <8}</level> | <level>{message}</level>"
-            ),
-            filter=lambda record: record["level"].no > logger.level("WARNING").no,
-            colorize=True,
-            backtrace=True,
-            diagnose=False,
-            enqueue=enqueue,
-        )
-
-        # Handle for debug file-writing.
-        if self._debug_log_path is not None and debug:
-            logger.add(
-                self._debug_log_path,
-                filter=lambda record: record["level"].no <= logger.level("DEBUG").no,
-                colorize=False,
-                rotation=None,
-                retention=None,
-                enqueue=enqueue,
-            )
-
-        # Message file-writing handle.
-        if self._message_log_path is not None:
-            logger.add(
-                self._message_log_path,
-                filter=lambda record: logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
-                colorize=False,
-                enqueue=enqueue,
-            )
-
-        # Error file-writing handle.
-        if self._error_log_path is not None:
-            logger.add(
-                self._error_log_path,
-                filter=lambda record: record["level"].no >= logger.level("ERROR").no,
-                colorize=False,
-                backtrace=True,
-                diagnose=True,
-                rotation=None,
-                retention=None,
-                enqueue=enqueue,
-            )
 
     def enable(self) -> None:
         """Enables processing messages and errors."""
@@ -259,7 +172,7 @@ class Console:
 
         Notes:
             When the console is disabled, the error() method raises exceptions, but does not log them to files or
-            provides detailed traceback information.
+            provide detailed traceback information.
         """
         self._is_enabled = False
 
@@ -380,14 +293,7 @@ class Console:
                 f"Unable to echo the requested message. Expected one of the levels defined in the LogLevel "
                 f"enumeration as the 'level' argument, but instead encountered {level} of type {type(level).__name__}."
             )
-            raise ValueError(
-                textwrap.fill(
-                    text=message,
-                    width=self._line_width,
-                    break_on_hyphens=self._break_on_hyphens,
-                    break_long_words=self._break_long_words,
-                )
-            )
+            self.error(message=message, error=ValueError)
 
     def error(
         self,
@@ -417,6 +323,101 @@ class Console:
         # Raises the error with clean formatting
         clean_message = self.format_message(message=message, loguru=False)
         raise error(clean_message)
+
+    def _add_handles(
+        self,
+        *,
+        debug: bool = False,
+        enqueue: bool = False,
+    ) -> None:
+        """Configures the loguru logger instance to use requested handles after removing all existing handles.
+
+        This worker method is used internally as part of class instantiation to configure the loguru backend.
+
+        Args:
+            debug: Determines whether to enable debug handles.
+            enqueue: Determines if messages are processed synchronously or asynchronously.
+        """
+        # Removes existing handles.
+        logger.remove()
+
+        # Debug terminal-printing handle.
+        if debug:
+            logger.add(
+                sys.stdout,
+                format=(
+                    "<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | "
+                    "<level>{level: <8}</level> | <level>{message}</level>"
+                ),
+                filter=lambda record: record["level"].no <= logger.level("DEBUG").no,
+                colorize=True,
+                backtrace=False,
+                diagnose=True,
+                enqueue=enqueue,
+            )
+
+        # Message terminal-printing handle.
+        # noinspection LongLine
+        logger.add(
+            sys.stdout,
+            format=(
+                "<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | "
+                "<level>{level: <8}</level> | <level>{message}</level>"
+            ),
+            filter=lambda record: logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
+            colorize=True,
+            backtrace=False,
+            diagnose=False,
+            enqueue=enqueue,
+        )
+
+        # Error terminal-printing-handle.
+        # noinspection LongLine
+        logger.add(
+            sys.stderr,
+            format=(
+                "<magenta>{time:YYYY-MM-DD HH:mm:ss.SSS}</magenta> | "
+                "<level>{level: <8}</level> | <level>{message}</level>"
+            ),
+            filter=lambda record: record["level"].no > logger.level("WARNING").no,
+            colorize=True,
+            backtrace=True,
+            diagnose=False,
+            enqueue=enqueue,
+        )
+
+        # Handle for debug file-writing.
+        if self._debug_log_path is not None and debug:
+            logger.add(
+                self._debug_log_path,
+                filter=lambda record: record["level"].no <= logger.level("DEBUG").no,
+                colorize=False,
+                rotation=None,
+                retention=None,
+                enqueue=enqueue,
+            )
+
+        # Message file-writing handle.
+        if self._message_log_path is not None:
+            logger.add(
+                self._message_log_path,
+                filter=lambda record: logger.level("WARNING").no >= record["level"].no > logger.level("DEBUG").no,
+                colorize=False,
+                enqueue=enqueue,
+            )
+
+        # Error file-writing handle.
+        if self._error_log_path is not None:
+            logger.add(
+                self._error_log_path,
+                filter=lambda record: record["level"].no >= logger.level("ERROR").no,
+                colorize=False,
+                backtrace=True,
+                diagnose=True,
+                rotation=None,
+                retention=None,
+                enqueue=enqueue,
+            )
 
 
 # Preconfigures and exposes the Console class instance as a variable, similar to how Loguru exposes logger. This allows

@@ -20,7 +20,7 @@ maintainers = [
 ]
 
 # The list of keywords that describe the project
-keywords = ["utilities", "utility-classes", "console", "ataraxis", "logging"]
+keywords = ["utilities", "utility-classes", "console", "ataraxis", "logging", "sunlab"]
 
 # Additional classifiers used by PyPI to group repositories.
 classifiers = [

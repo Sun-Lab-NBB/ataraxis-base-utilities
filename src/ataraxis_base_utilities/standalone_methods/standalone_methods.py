@@ -2,12 +2,16 @@
 from popular Python libraries.
 """
 
+from __future__ import annotations
+
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from collections.abc import Iterable, Generator
 
 import numpy as np
-from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 from ..console import console
 
@@ -56,13 +60,13 @@ def ensure_list(
         f"are not supported."
     )
     console.error(message=message, error=TypeError)
-    # This is just to appease mypy.
+    # Unreachable: console.error() is NoReturn, but ruff cannot trace NoReturn through method calls (RET503).
+    # noinspection PyUnreachableCode
     raise TypeError(message)  # pragma: no cover
 
 
-# noinspection PyTypeHints
 def chunk_iterable(
-    iterable: NDArray[Any] | tuple[Any] | list[Any], chunk_size: int
+    iterable: NDArray[Any] | tuple[Any, ...] | list[Any], chunk_size: int
 ) -> Generator[tuple[Any, ...] | NDArray[Any], None, None]:
     """Yields successive chunks from the input ordered Python iterable or NumPy array.
 
@@ -105,7 +109,6 @@ def chunk_iterable(
         yield np.array(chunk_slice) if isinstance(iterable, np.ndarray) else tuple(chunk_slice)
 
 
-# noinspection PyProtectedMember
 def error_format(message: str) -> str:
     """Formats the input message to match the default Console format and escapes it using re, so that it can be used to
     verify raised exceptions.

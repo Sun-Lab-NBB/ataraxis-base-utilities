@@ -1,9 +1,10 @@
 """Contains tests for classes and functions provided by the console_class.py module."""
 
 import re
-from typing import Any, Generator
-from pathlib import Path
 import tempfile
+from collections.abc import Generator
+from pathlib import Path
+from typing import Any
 
 from loguru import logger
 import pytest
@@ -19,13 +20,13 @@ from ataraxis_base_utilities.console.console_class import (
 
 @pytest.fixture
 def temp_dir() -> Generator[Path, Any, None]:
-    """Generates and yields the temporary directory used by the tests that involve log file operations."""
+    """Provides a temporary directory for tests that involve log file operations."""
     temp_dir_name: str
     with tempfile.TemporaryDirectory() as temp_dir_name:
         yield Path(temp_dir_name)
 
 
-def test_console_class_initialization(tmp_path) -> None:
+def test_console_class_initialization(tmp_path: Path) -> None:
     """Verifies the functioning of the Console class __init__() method."""
 
     # Tests basic initialization
@@ -70,7 +71,7 @@ def test_console_variable_initialization_defaults() -> None:
     assert console.error_log_path is None
 
 
-def test_console_initialization_errors(temp_dir) -> None:
+def test_console_initialization_errors(temp_dir: Path) -> None:
     """Verifies the error-handling behavior of the Console class __init__() method."""
 
     # Tests invalid line width
@@ -81,8 +82,8 @@ def test_console_initialization_errors(temp_dir) -> None:
         Console(line_width=-5)
 
     # Tests invalid log_directory type
+    # noinspection PyTypeChecker
     with pytest.raises(TypeError, match="Invalid 'log_directory' argument"):
-        # noinspection PyTypeChecker
         Console(log_directory="not_a_path")
 
 
@@ -117,7 +118,7 @@ def test_console_enable_disable() -> None:
     assert not test_console.enabled
 
 
-def test_console_properties(tmp_path) -> None:
+def test_console_properties(tmp_path: Path) -> None:
     """Verifies the functionality of Console class property getters."""
     # Test without the log directory
     test_console = Console()
@@ -138,24 +139,24 @@ def test_ensure_directory_exists() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         # Test with a directory path
         dir_path = Path(temp_dir) / "test_dir"
-        ensure_directory_exists(dir_path)
+        ensure_directory_exists(path=dir_path)
         assert dir_path.exists() and dir_path.is_dir()
 
         # Tests with a file path
         file_path = Path(temp_dir) / "nested" / "dir" / "test_file.txt"
-        ensure_directory_exists(file_path)
+        ensure_directory_exists(path=file_path)
         assert file_path.parent.exists() and file_path.parent.is_dir()
         assert not file_path.exists()  # The file itself should not be created
 
         # Tests with an existing directory
         existing_dir = Path(temp_dir) / "existing_dir"
         existing_dir.mkdir()
-        ensure_directory_exists(existing_dir)
+        ensure_directory_exists(path=existing_dir)
         assert existing_dir.exists() and existing_dir.is_dir()
 
         # Tests with a deeply nested path
         deep_path = Path(temp_dir) / "very" / "deep" / "nested" / "directory" / "structure"
-        ensure_directory_exists(deep_path)
+        ensure_directory_exists(path=deep_path)
         assert deep_path.exists() and deep_path.is_dir()
 
 
@@ -165,11 +166,11 @@ def test_console_format_message() -> None:
     message = "This is a long message that should be wrapped properly according to the specified parameters"
 
     # Test non-loguru wrapping
-    formatted = test_console.format_message(message, loguru=False)
+    formatted = test_console.format_message(message=message, loguru=False)
     assert len(max(formatted.split("\n"), key=len)) <= 80
 
     # Tests loguru wrapping
-    formatted = test_console.format_message(message, loguru=True)
+    formatted = test_console.format_message(message=message, loguru=True)
     lines = formatted.split("\n")
 
     # Checks first line (should account for the 37-character loguru header)
@@ -187,8 +188,8 @@ def test_console_format_message() -> None:
     assert formatted_words == message_words
 
 
-def test_console_echo(tmp_path, capsys):
-    """Verifies the functionality of the Console class echo () method."""
+def test_console_echo(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Verifies the functionality of the Console class echo() method."""
     # Setup console with log files
     log_dir = tmp_path / "logs"
     test_console = Console(log_directory=log_dir, debug=True)
@@ -199,7 +200,7 @@ def test_console_echo(tmp_path, capsys):
 
     for level in log_levels:
         message = f"Test {level} message"
-        test_console.echo(message, level)
+        test_console.echo(message=message, level=level)
 
         captured = capsys.readouterr()
 
@@ -211,7 +212,7 @@ def test_console_echo(tmp_path, capsys):
 
     # Tests with the disabled console
     test_console.disable()
-    test_console.echo("Disabled message", LogLevel.INFO)
+    test_console.echo(message="Disabled message", level=LogLevel.INFO)
     captured = capsys.readouterr()
 
     # Should not output anything when disabled
@@ -221,24 +222,24 @@ def test_console_echo(tmp_path, capsys):
     # Tests with a very long message
     test_console.enable()
     long_message = "This is a very long message " * 20
-    test_console.echo(long_message, LogLevel.INFO)
+    test_console.echo(message=long_message, level=LogLevel.INFO)
     captured = capsys.readouterr()
 
     # Should be properly formatted and wrapped
     assert "This is a very long message" in captured.out
 
 
-def test_console_echo_invalid_level():
+def test_console_echo_invalid_level() -> None:
     """Verifies the error-handling behavior of the Console class echo() method."""
     test_console = Console()
     test_console.enable()
 
     # Test with invalid log level
     with pytest.raises(ValueError, match="Unable to echo the requested message"):
-        test_console.echo("Test message", "INVALID_LEVEL")
+        test_console.echo(message="Test message", level="INVALID_LEVEL")
 
 
-def test_console_error(tmp_path, capsys):
+def test_console_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Verifies the functionality of the Console class error() method."""
     # Setup console with error logging
     log_dir = tmp_path / "logs"
@@ -247,7 +248,7 @@ def test_console_error(tmp_path, capsys):
 
     # Test basic error raising
     with pytest.raises(RuntimeError, match="Test error"):
-        test_console.error("Test error")
+        test_console.error(message="Test error")
 
     # Check that the error was logged to the terminal
     captured = capsys.readouterr()
@@ -256,36 +257,35 @@ def test_console_error(tmp_path, capsys):
     # Check that the error was logged to the file
     error_log_path = log_dir / "error.log"
     if error_log_path.exists():
-        with open(error_log_path, "r") as f:
-            log_content = f.read()
-            assert "Test error" in log_content
+        log_content = error_log_path.read_text()
+        assert "Test error" in log_content
 
     # Tests a custom error type
     with pytest.raises(ValueError, match="Custom error"):
-        test_console.error("Custom error", ValueError)
+        test_console.error(message="Custom error", error=ValueError)
 
     # Test with the disabled console (should still raise but not log)
     test_console.disable()
     with pytest.raises(TypeError, match="Disabled error"):
-        test_console.error("Disabled error", TypeError)
+        test_console.error(message="Disabled error", error=TypeError)
 
     captured = capsys.readouterr()
     # Should not log to terminal when disabled
     assert "Disabled error" not in captured.err
 
 
-def test_console_error_without_logging():
-    """Tests error method when no log directory is configured."""
+def test_console_error_without_logging() -> None:
+    """Verifies that the Console class error() method works when no log directory is configured."""
     test_console = Console()  # No log directory
     test_console.enable()
 
     # Should still raise error even without logging
     with pytest.raises(RuntimeError, match="No logging error"):
-        test_console.error("No logging error")
+        test_console.error(message="No logging error")
 
 
-def test_log_formats():
-    """Tests LogFormats enum functionality."""
+def test_log_formats() -> None:
+    """Verifies the functioning of the LogFormats enum."""
     assert LogFormats.LOG == ".log"
     assert LogFormats.TXT == ".txt"
     assert LogFormats.JSON == ".json"
@@ -302,8 +302,8 @@ def test_log_formats():
             assert test_console.error_log_path.suffix == format_type
 
 
-def test_log_levels():
-    """Tests LogLevel enum functionality."""
+def test_log_levels() -> None:
+    """Verifies the functioning of the LogLevel enum."""
     expected_levels = ["debug", "info", "success", "warning", "error", "critical"]
 
     for level_name in expected_levels:
@@ -311,8 +311,8 @@ def test_log_levels():
         assert getattr(LogLevel, level_name.upper()) == level_name
 
 
-def test_console_add_handles(tmp_path):
-    """Tests the _add_handles method functionality."""
+def test_console_add_handles(tmp_path: Path) -> None:
+    """Verifies the functioning of the Console class _add_handles() method."""
     log_dir = tmp_path / "logs"
     test_console = Console(log_directory=log_dir, debug=True)
 
@@ -326,26 +326,26 @@ def test_console_add_handles(tmp_path):
     assert len(logger._core.handlers) >= initial_handler_count
 
 
-def test_console_message_formatting_edge_cases():
-    """Tests edge cases in message formatting."""
+def test_console_message_formatting_edge_cases() -> None:
+    """Verifies edge case handling of the Console class format_message() method."""
     test_console = Console(line_width=50)
 
     # Tests an empty message
-    assert test_console.format_message("") == ""
+    assert test_console.format_message(message="") == ""
 
     # Tests a single word longer than line width
     long_word = "a" * 100
-    formatted = test_console.format_message(long_word, loguru=False)
+    formatted = test_console.format_message(message=long_word, loguru=False)
     assert long_word in formatted
 
     # Tests the message with newlines
     multiline = "Line 1\nLine 2\nLine 3"
-    formatted = test_console.format_message(multiline, loguru=False)
+    formatted = test_console.format_message(message=multiline, loguru=False)
     assert "Line 1" in formatted and "Line 2" in formatted and "Line 3" in formatted
 
 
-def test_global_console_instance():
-    """Tests the global console instance."""
+def test_global_console_instance() -> None:
+    """Verifies the functioning of the global console instance."""
     # The global console should be properly initialized
     assert isinstance(console, Console)
     assert console._line_width == 120

@@ -12,7 +12,7 @@ dependencies:
   - filelock=3.24.2=pyhd8ed1ab_0
   - icu=78.2=h33c6efd_0
   - ld_impl_linux-64=2.45.1=default_hbd61a6d_101
-  - libexpat=2.7.3=hecca717_0
+  - libexpat=2.7.4=hecca717_0
   - libffi=3.5.2=h3435931_0
   - libgcc=15.2.0=he0feb66_17
   - libgomp=15.2.0=he0feb66_17
@@ -51,7 +51,7 @@ dependencies:
     - Sphinx==9.1.0
     - accessible-pygments==0.0.5
     - alabaster==1.0.0
-    - ataraxis-automation==8.0.0
+    - ataraxis-automation==8.1.0
     - babel==2.18.0
     - bashlex==0.18
     - beautifulsoup4==4.14.3
@@ -122,8 +122,11 @@ dependencies:
     - sphinxcontrib-jsmath==1.0.1
     - sphinxcontrib-qthelp==2.0.0
     - sphinxcontrib-serializinghtml==2.0.0
+    - tqdm==4.67.3
     - trove-classifiers==2026.1.14.14
     - twine==6.2.0
+    - types-requests==2.32.4.20260107
+    - types-tqdm==4.67.3.20260205
     - urllib3==2.6.3
     - wheel==0.46.3
     - zipp==3.23.0

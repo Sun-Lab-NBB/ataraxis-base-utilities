@@ -1,13 +1,19 @@
 """Provides the Console class for message and error terminal-printing and file-logging functionality."""
 
+from __future__ import annotations
+
 import sys
 from enum import StrEnum
-from typing import NoReturn
+from typing import TYPE_CHECKING, NoReturn
 from pathlib import Path
 import textwrap
-from collections.abc import Callable
+from contextlib import contextmanager
 
+from tqdm import tqdm
 from loguru import logger
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Iterator
 
 
 class LogLevel(StrEnum):
@@ -53,6 +59,39 @@ def ensure_directory_exists(path: Path) -> None:
         path.mkdir(parents=True, exist_ok=True)
 
 
+class ProgressBar:
+    """Wraps a tqdm progress bar to provide a simplified update interface.
+
+    This class is yielded by the Console.progress() context manager and exposes only the update and close operations
+    needed for manual progress tracking.
+
+    Args:
+        tqdm_bar: The tqdm progress bar instance to wrap.
+
+    Attributes:
+        _tqdm_bar: Stores the wrapped tqdm progress bar instance.
+    """
+
+    def __init__(self, tqdm_bar: tqdm[NoReturn]) -> None:
+        self._tqdm_bar: tqdm[NoReturn] = tqdm_bar
+
+    def __repr__(self) -> str:
+        """Returns a string representation of the ProgressBar instance."""
+        return f"ProgressBar(total={self._tqdm_bar.total}, n={self._tqdm_bar.n})"
+
+    def update(self, n: float = 1) -> None:
+        """Advances the progress bar by the specified amount.
+
+        Args:
+            n: The number of units to advance the progress bar.
+        """
+        self._tqdm_bar.update(n=n)
+
+    def close(self) -> None:
+        """Closes the progress bar and releases its resources."""
+        self._tqdm_bar.close()
+
+
 class Console:
     """Provides methods for printing and / or logging messages and errors.
 
@@ -82,6 +121,9 @@ class Console:
         debug: Determines whether to print and log debug messages.
         enqueue: Determines whether to pass logged messages through an asynchronous queue. Primarily, this is helpful
             when logging the messages from multiple producers running in parallel.
+        show_progress: Determines whether progress bars from track() and progress() are displayed. When False, progress
+            bars are suppressed even if the console is enabled. This allows echo() output to remain active while hiding
+            progress bar display.
 
     Attributes:
         _line_width: Stores the maximum allowed text block line width, in characters.
@@ -92,6 +134,8 @@ class Console:
         _error_log_path: Stores the path to the error log file.
         _is_enabled: Tracks whether logging through this class instance is enabled. When this tracker is False, the
             echo() method will have limited functionality.
+        _show_progress: Tracks whether progress bars are displayed. When False, track() and progress() suppress their
+            tqdm bars regardless of the console's enabled state.
 
     Raises:
         ValueError: If the input line_width number is not valid.
@@ -108,6 +152,7 @@ class Console:
         break_on_hyphens: bool = False,
         debug: bool = False,
         enqueue: bool = False,
+        show_progress: bool = False,
     ) -> None:
         # Message formatting parameters.
         if line_width <= 0:
@@ -158,6 +203,7 @@ class Console:
 
         # Ensures the Console is disabled until it is manually enabled by the user
         self._is_enabled: bool = False
+        self._show_progress: bool = show_progress
 
     def __repr__(self) -> str:
         """Returns a string representation of the Console instance."""
@@ -175,6 +221,36 @@ class Console:
             provide detailed traceback information.
         """
         self._is_enabled = False
+
+    @contextmanager
+    def temporarily_enabled(self) -> Iterator[None]:
+        """Provides a context manager that temporarily enables the console.
+
+        Saves the current enabled state, enables the console for the duration of the context, and restores the original
+        state on exit. This is useful for code that needs to produce output even when the console is normally disabled.
+
+        Yields:
+            None.
+        """
+        previous_state: bool = self._is_enabled
+        self._is_enabled = True
+        try:
+            yield
+        finally:
+            self._is_enabled = previous_state
+
+    def enable_progress(self) -> None:
+        """Enables progress bar display for track() and progress() calls."""
+        self._show_progress = True
+
+    def disable_progress(self) -> None:
+        """Disables progress bar display for track() and progress() calls.
+
+        Notes:
+            When progress is disabled, track() and progress() still yield items and accept updates normally, but no
+            visual progress bar is rendered. Console echo() and error() methods are unaffected.
+        """
+        self._show_progress = False
 
     @property
     def debug_log_path(self) -> Path | None:
@@ -201,6 +277,11 @@ class Console:
     def enabled(self) -> bool:
         """Returns True if the instance is configured to process messages and errors."""
         return self._is_enabled
+
+    @property
+    def progress_enabled(self) -> bool:
+        """Returns True if progress bar display is enabled."""
+        return self._show_progress
 
     def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the instance configuration parameters.
@@ -258,18 +339,49 @@ class Console:
             break_on_hyphens=self._break_on_hyphens,
         )
 
-    def echo(self, message: str, level: str | LogLevel = LogLevel.INFO) -> None:
+    def echo(self, message: str, level: str | LogLevel = LogLevel.INFO, *, raw: bool = False) -> None:
         """Formats the input message according to the class configuration and outputs it to the terminal, file, or both.
+
+        When raw mode is enabled, the message bypasses format_message() and loguru's format string, outputting the text
+        without a timestamp header or level prefix. This is useful for pre-formatted content such as tables or
+        DataFrames.
 
         Args:
             message: The message to be processed.
             level: The severity level of the message.
+            raw: Determines whether to bypass message formatting and loguru headers. When True, the message is output
+                as-is without text wrapping or timestamp prefixes.
 
         Raises:
             ValueError: If the requested log_level is not one of the valid LogLevel members.
         """
         # If the Console is disabled, returns without further processing.
         if not self.enabled:
+            return
+
+        # Handles raw mode, which bypasses message formatting and loguru headers.
+        if raw:
+            opt_logger = logger.opt(raw=True)
+            raw_message = message + "\n"
+            if level == LogLevel.DEBUG:
+                opt_logger.debug(raw_message)
+            elif level == LogLevel.INFO:
+                opt_logger.info(raw_message)
+            elif level == LogLevel.SUCCESS:
+                opt_logger.success(raw_message)
+            elif level == LogLevel.WARNING:
+                opt_logger.warning(raw_message)
+            elif level == LogLevel.ERROR:
+                opt_logger.error(raw_message)
+            elif level == LogLevel.CRITICAL:
+                opt_logger.critical(raw_message)
+            else:
+                message = (
+                    f"Unable to echo the requested message. Expected one of the levels defined in the LogLevel "
+                    f"enumeration as the 'level' argument, but instead encountered {level} of type "
+                    f"{type(level).__name__}."
+                )
+                self.error(message=message, error=ValueError)
             return
 
         # Formats the message to work with additional loguru-prepended header.
@@ -294,6 +406,66 @@ class Console:
                 f"enumeration as the 'level' argument, but instead encountered {level} of type {type(level).__name__}."
             )
             self.error(message=message, error=ValueError)
+
+    def track[T](
+        self,
+        iterable: Iterable[T],
+        description: str = "",
+        total: float | None = None,
+        unit: str = "iteration",
+    ) -> Iterable[T]:
+        """Wraps an iterable with a tqdm progress bar tied to the console's enabled and progress states.
+
+        The progress bar is displayed only when both the console is enabled and progress display is enabled. Items are
+        always yielded regardless of the display state.
+
+        Args:
+            iterable: The iterable to wrap with a progress bar.
+            description: The label displayed next to the progress bar.
+            total: The expected total number of iterations. If None, tqdm attempts to infer it from the iterable.
+            unit: The string used to label each iteration unit.
+
+        Returns:
+            An iterable that yields items from the input iterable while displaying a progress bar.
+        """
+        return tqdm(
+            iterable,
+            desc=description,
+            total=total,
+            unit=unit,
+            disable=not (self._is_enabled and self._show_progress),
+        )
+
+    @contextmanager
+    def progress(
+        self,
+        total: float,
+        description: str = "",
+        unit: str = "iteration",
+    ) -> Iterator[ProgressBar]:
+        """Provides a context manager that yields a manually-updatable progress bar.
+
+        The progress bar is displayed only when both the console is enabled and progress display is enabled. The bar is
+        automatically closed when the context manager exits.
+
+        Args:
+            total: The total number of expected units for the progress bar.
+            description: The label displayed next to the progress bar.
+            unit: The string used to label each iteration unit.
+
+        Yields:
+            A ProgressBar instance that exposes update() and close() methods.
+        """
+        progress_bar = tqdm(
+            total=total,
+            desc=description,
+            unit=unit,
+            disable=not (self._is_enabled and self._show_progress),
+        )
+        try:
+            yield ProgressBar(tqdm_bar=progress_bar)
+        finally:
+            progress_bar.close()
 
     def error(
         self,

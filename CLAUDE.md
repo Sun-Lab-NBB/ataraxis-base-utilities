@@ -1,30 +1,33 @@
 # Claude Code Instructions
 
-## Session Start Behavior
+## Session start behavior
 
-At the beginning of each coding session, before making any code changes, you should build a comprehensive
-understanding of the codebase by invoking the `/explore-codebase` skill.
+At the beginning of each coding session, before making any code changes, you should build a comprehensive understanding
+of the codebase by invoking the `/explore-codebase` skill.
 
 This ensures you:
 - Understand the project architecture before modifying code
 - Follow existing patterns and conventions
-- Don't introduce inconsistencies or break integrations
+- Do not introduce inconsistencies or break integrations
 
-## Style Guide Requirements
+## Style guide compliance
 
-You MUST invoke `/sun-lab-style` and read the appropriate guide before performing ANY of the following tasks:
+You MUST invoke the appropriate style skill before performing ANY of the following tasks:
 
-| Task                              | Guide to Read      |
-|-----------------------------------|--------------------|
-| Writing or modifying Python code  | PYTHON_STYLE.md    |
-| Writing or modifying README files | README_STYLE.md    |
-| Writing git commit messages       | COMMIT_STYLE.md    |
-| Writing or modifying skill files  | SKILL_STYLE.md     |
+| Task                                | Skill to invoke    |
+|-------------------------------------|--------------------|
+| Writing or modifying Python code    | `/python-style`    |
+| Writing or modifying README files   | `/readme-style`    |
+| Writing git commit messages         | `/commit`          |
+| Writing or modifying skill files    | `/skill-design`    |
+| Writing or modifying pyproject.toml | `/pyproject-style` |
+| Writing or modifying tox.ini        | `/tox-config`      |
+| Writing or modifying API docs       | `/api-docs`        |
 
-This is non-negotiable. The skill contains verification checklists that you MUST complete before submitting any work.
-Failure to read the appropriate guide results in style violations.
+Each skill contains a verification checklist that you MUST complete before submitting any work. Failure to invoke the
+appropriate skill results in style violations.
 
-## Cross-Referenced Library Verification
+## Cross-referenced library verification
 
 Sun Lab projects often depend on other `ataraxis-*` or `sl-*` libraries. These libraries may be stored locally in the
 same parent directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`).
@@ -51,64 +54,86 @@ same parent directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`
 **Why this matters**: Skills and documentation may reference outdated APIs. Always verify against the actual library
 state to prevent integration errors.
 
-## Available Skills
+## Available skills
 
-| Skill               | Description                                                      |
-|---------------------|------------------------------------------------------------------|
-| `/explore-codebase` | Perform in-depth codebase exploration at session start           |
-| `/sun-lab-style`    | Apply Sun Lab coding conventions (REQUIRED for all code changes) |
+| Skill                | Description                                                               |
+|----------------------|---------------------------------------------------------------------------|
+| `/explore-codebase`  | Perform in-depth codebase exploration at session start                    |
+| `/python-style`      | Apply Sun Lab Python coding conventions (REQUIRED for all Python changes) |
+| `/readme-style`      | Apply Sun Lab README conventions (REQUIRED for README changes)            |
+| `/commit`            | Draft Sun Lab style-compliant git commit messages                         |
+| `/skill-design`      | Generate and verify skill files and CLAUDE.md project instructions        |
+| `/pyproject-style`   | Apply Sun Lab pyproject.toml conventions                                  |
+| `/tox-config`        | Apply Sun Lab tox.ini conventions                                         |
+| `/api-docs`          | Apply Sun Lab API documentation conventions                               |
 
-## Project Context
+## Downstream library integration
+
+This library is a dependency for virtually all other `ataraxis-*` and `sl-*` libraries in the Sun Lab ecosystem.
+Changes to the public API affect all downstream projects. You MUST maintain backwards compatibility when modifying
+exported classes, functions, or constants unless the user explicitly requests a breaking change.
+
+## Project context
 
 This is **ataraxis-base-utilities**, a foundational Python library that provides unified message handling, error
-management, and common utility functions for all Sun Lab projects at Cornell University. This library is a dependency
-for virtually all other `ataraxis-*` and `sl-*` libraries in the Sun Lab ecosystem.
+management, and common utility functions for all Sun Lab projects at Cornell University.
 
-### Key Areas
+### Key areas
 
-| Directory                                             | Purpose                                      |
-|-------------------------------------------------------|----------------------------------------------|
-| `src/ataraxis_base_utilities/`                        | Main library source code                     |
-| `src/ataraxis_base_utilities/console/`                | Console class for unified message handling   |
-| `src/ataraxis_base_utilities/standalone_methods/`     | Common utility functions                     |
-| `tests/`                                              | Test suite                                   |
-| `docs/`                                               | Sphinx documentation source                  |
+| Directory                                         | Purpose                                    |
+|---------------------------------------------------|--------------------------------------------|
+| `src/ataraxis_base_utilities/`                    | Main library source code                   |
+| `src/ataraxis_base_utilities/console/`            | Console class for unified message handling |
+| `src/ataraxis_base_utilities/standalone_methods/` | Common utility functions                   |
+| `tests/`                                          | Test suite                                 |
+| `docs/`                                           | Sphinx documentation source                |
 
 ### Architecture
 
-- **Console Module**: The core `Console` class wraps loguru to provide a unified message/error handling framework.
-  The global `console` instance is pre-configured and shared across all Sun Lab projects.
-- **Standalone Methods**: Utility functions like `ensure_list()`, `chunk_iterable()`, and `error_format()` for common
-  data manipulation tasks.
+- **Console module**: The core `Console` class wraps loguru to provide a unified message and error handling framework.
+  The global `console` instance is pre-configured and shared across all Sun Lab projects. Includes `ProgressBar` for
+  tqdm-based progress tracking, `LogLevel` and `LogFormats` enumerations, and a `temporarily_enabled()` context
+  manager.
+- **Standalone methods**: Utility functions for list conversion (`ensure_list`), iterable chunking
+  (`chunk_iterable`), error formatting (`error_format`), CPU core resolution (`resolve_worker_count`,
+  `resolve_parallel_job_capacity`), and NumPy byte serialization (`convert_scalar_to_bytes`,
+  `convert_bytes_to_scalar`, `convert_array_to_bytes`, `convert_bytes_to_array`).
 - **No CLI**: This is a library-only project with no command-line entry points.
-- **Singleton Pattern**: The global `console` instance allows consistent configuration from application entry points.
+- **Singleton pattern**: The global `console` instance allows consistent configuration from application entry points.
 
-### Core Components
+### Core components
 
-| Component               | File                                       | Purpose                                          |
-|-------------------------|--------------------------------------------|--------------------------------------------------|
-| Console                 | `console/console_class.py`                 | Unified terminal printing and file logging       |
-| LogLevel                | `console/console_class.py`                 | Enum for log levels (DEBUG, INFO, SUCCESS, etc.) |
-| LogFormats              | `console/console_class.py`                 | Enum for log file formats (LOG, TXT, JSON)       |
-| ensure_list             | `standalone_methods/standalone_methods.py` | Converts various types to lists                  |
-| chunk_iterable          | `standalone_methods/standalone_methods.py` | Splits iterables into chunks                     |
-| error_format            | `standalone_methods/standalone_methods.py` | Formats messages for test exception matching     |
-| ensure_directory_exists | `console/console_class.py`                 | Creates directories if they don't exist          |
+| Component                       | File                                       | Purpose                                      |
+|---------------------------------|--------------------------------------------|----------------------------------------------|
+| `Console`                       | `console/console_class.py`                 | Unified terminal printing and file logging   |
+| `LogLevel`                      | `console/console_class.py`                 | Enum for log levels (DEBUG through CRITICAL) |
+| `LogFormats`                    | `console/console_class.py`                 | Enum for log file formats (LOG, TXT, JSON)   |
+| `ProgressBar`                   | `console/console_class.py`                 | Wrapper for tqdm progress bars               |
+| `ensure_directory_exists`       | `console/console_class.py`                 | Creates directories if they do not exist     |
+| `ensure_list`                   | `standalone_methods/standalone_methods.py` | Converts various types to lists              |
+| `chunk_iterable`                | `standalone_methods/standalone_methods.py` | Splits iterables into sized chunks           |
+| `error_format`                  | `standalone_methods/standalone_methods.py` | Formats messages for test exception matching |
+| `resolve_worker_count`          | `standalone_methods/standalone_methods.py` | Determines CPU core allocation for jobs      |
+| `resolve_parallel_job_capacity` | `standalone_methods/standalone_methods.py` | Determines parallel job count from cores     |
+| `convert_scalar_to_bytes`       | `standalone_methods/standalone_methods.py` | Serializes scalars to uint8 byte arrays      |
+| `convert_bytes_to_scalar`       | `standalone_methods/standalone_methods.py` | Deserializes uint8 byte arrays to scalars    |
+| `convert_array_to_bytes`        | `standalone_methods/standalone_methods.py` | Serializes NumPy arrays to uint8 bytes       |
+| `convert_bytes_to_array`        | `standalone_methods/standalone_methods.py` | Deserializes uint8 bytes to typed arrays     |
 
-### Code Standards
+### Code standards
 
 - MyPy strict mode with full type annotations
 - Google-style docstrings
 - 120 character line limit
-- See `/sun-lab-style` for complete conventions
+- See `/python-style` for complete conventions
 
-### Workflow Guidance
+### Workflow guidance
 
 **Modifying the Console class:**
 
 1. Review `src/ataraxis_base_utilities/console/console_class.py` for current implementation
 2. Understand the loguru integration and three-tier logging (debug, message, error)
-3. Maintain backwards compatibility - this library is used by all other Sun Lab projects
+3. Maintain backwards compatibility — this library is used by all other Sun Lab projects
 4. Test changes thoroughly as they affect the entire ecosystem
 
 **Adding utility functions:**
@@ -121,6 +146,5 @@ for virtually all other `ataraxis-*` and `sl-*` libraries in the Sun Lab ecosyst
 **Important considerations:**
 
 - This library intentionally conflicts with other loguru-using libraries
-- Changes to the public API affect all downstream Sun Lab projects
 - The global `console` instance must be enabled from application entry points
 - Use `console.error()` instead of `raise` for all error handling within this library

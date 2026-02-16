@@ -137,9 +137,6 @@ def test_resolve_worker_count_error() -> None:
         resolve_worker_count(reserved_cores=-1)
 
 
-# --- resolve_parallel_job_capacity tests ---
-
-
 @pytest.mark.parametrize(
     "workers_per_job, mock_cpu, expected",
     [
@@ -164,9 +161,6 @@ def test_resolve_parallel_job_capacity_error(workers_per_job: int) -> None:
     """Verifies resolve_parallel_job_capacity() raises errors for invalid workers_per_job."""
     with pytest.raises(ValueError, match="Invalid 'workers_per_job' value"):
         resolve_parallel_job_capacity(workers_per_job=workers_per_job)
-
-
-# --- convert_scalar_to_bytes tests ---
 
 
 @pytest.mark.parametrize(
@@ -218,9 +212,6 @@ def test_convert_scalar_to_bytes_cache() -> None:
     assert np.array_equal(b, d)
 
 
-# --- convert_bytes_to_scalar tests ---
-
-
 @pytest.mark.parametrize(
     "value, dtype",
     [
@@ -265,9 +256,6 @@ def test_convert_bytes_to_scalar_error() -> None:
         convert_bytes_to_scalar(data=wrong_dtype, dtype=np.dtype("<i4"))
 
 
-# --- convert_array_to_bytes tests ---
-
-
 @pytest.mark.parametrize(
     "array",
     [
@@ -302,9 +290,6 @@ def test_convert_array_to_bytes_error() -> None:
     empty = np.array([], dtype=np.int32)
     with pytest.raises(ValueError, match="Invalid 'array' size"):
         convert_array_to_bytes(array=empty)
-
-
-# --- convert_bytes_to_array tests ---
 
 
 @pytest.mark.parametrize(

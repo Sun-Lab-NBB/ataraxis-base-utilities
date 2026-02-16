@@ -86,12 +86,12 @@ def chunk_iterable(
         iterable: The Python iterable or NumPy array to split into chunks.
         chunk_size: The maximum number of elements in each chunk.
 
+    Yields:
+        Chunks of the input iterable (as a tuple) or NumPy array, containing at most chunk_size elements.
+
     Raises:
         TypeError: If 'iterable' is not of a correct type.
         ValueError: If 'chunk_size' value is below 1.
-
-    Yields:
-        Chunks of the input iterable (as a tuple) or NumPy array, containing at most chunk_size elements.
     """
     if not isinstance(iterable, (np.ndarray, list, tuple)):
         message: str = (
@@ -159,13 +159,13 @@ def resolve_worker_count(
         )
         console.error(message=message, error=ValueError)
 
-    # Determine the usable core budget. Falls back to reserved_cores if cpu_count() returns None.
+    # Determines the usable core budget. Falls back to reserved_cores if cpu_count() returns None.
     available = cpu_count()
     if available is None:
         available = reserved_cores
     budget = max(1, available - reserved_cores)
 
-    # If the caller specified a worker cap, respect it against the budget.
+    # If the caller specified a worker cap, respects it against the budget.
     if requested_workers > 0:
         return min(requested_workers, budget)
 
@@ -225,7 +225,7 @@ def convert_scalar_to_bytes(
     if isinstance(value, np.generic):
         value = value.item()
 
-    raw = _cached_convert_scalar_to_bytes(value, dtype.str)
+    raw = _cached_convert_scalar_to_bytes(value=value, dtype_str=dtype.str)
     return np.frombuffer(raw, dtype=np.uint8).copy()
 
 

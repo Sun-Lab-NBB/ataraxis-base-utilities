@@ -104,7 +104,7 @@ class Console:
         Do not configure or enable the Console class from libraries that may be imported by other projects! To work
         as expected, the Console has to be enabled at the highest level of the call hierarchy.
 
-        This class conflicts with all libraries that make explicit calls to the loguru backend, as it reconfigured
+        This class conflicts with all libraries that make explicit calls to the loguru backend, as it reconfigures
         loguru handles to support its runtime.
 
     Args:
@@ -169,7 +169,7 @@ class Console:
         self._break_long_words: bool = break_long_words
         self._break_on_hyphens: bool = break_on_hyphens
 
-        # Resolves the paths to output log files
+        # Resolves the paths to output log files.
         self._debug_log_path: Path | None = None
         self._message_log_path: Path | None = None
         self._error_log_path: Path | None = None
@@ -187,10 +187,10 @@ class Console:
                     )
                 )
 
-            # If necessary, creates the log directory
+            # If necessary, creates the log directory.
             ensure_directory_exists(log_directory)
 
-            # Ensures that the log format is one of the valid LogFormats members
+            # Ensures that the log format is one of the valid LogFormats members.
             log_format = LogFormats(log_format)
 
             # Constructs and saves the paths to log files to class attributes.
@@ -198,10 +198,10 @@ class Console:
             self._message_log_path = log_directory / f"message{log_format}"
             self._error_log_path = log_directory / f"error{log_format}"
 
-        # Adds handles to configure loguru backend
+        # Adds handles to configure loguru backend.
         self._add_handles(debug=debug, enqueue=enqueue)
 
-        # Ensures the Console is disabled until it is manually enabled by the user
+        # Ensures the Console is disabled until it is manually enabled by the user.
         self._is_enabled: bool = False
         self._show_progress: bool = show_progress
 
@@ -300,7 +300,7 @@ class Console:
         # is assumed to be matching the standard defined in add_handles() method, which statically reserves 37
         # characters of the first line.
         if loguru:
-            # Calculates indent and dedent parameters for the lines
+            # Calculates indent and dedent parameters for the lines.
             first_line_width: int = self._line_width - 37  # Shortens the first line
             subsequent_indent: str = " " * 37
             lines: list[str] = []
@@ -308,7 +308,7 @@ class Console:
             # Handles the first line by wrapping it to fit into the required width given the additional loguru header.
             first_line: str = message[:first_line_width]  # Subtracts loguru header
             if len(message) > first_line_width:  # Determines the wrapping point
-                # Finds the last space in the first line to avoid breaking words
+                # Finds the last space in the first line to avoid breaking words.
                 last_space: int = first_line.rfind(" ")
                 if last_space != -1:  # Wraps the line
                     first_line = first_line[:last_space]
@@ -481,7 +481,7 @@ class Console:
             message: The error message.
             error: The exception class to raise.
         """
-        # Initializes the exception instance
+        # Initializes the exception instance.
         exception_instance = error(message)
 
         if self.enabled and self.error_log_path is not None:
@@ -489,10 +489,10 @@ class Console:
             formatted_message = self.format_message(message=message, loguru=True)
             log_message = f"Raising {type(exception_instance).__name__}: {formatted_message}"
 
-            # Always logs at ERROR level
+            # Always logs at ERROR level.
             logger.error(log_message)
 
-        # Raises the error with clean formatting
+        # Raises the error with clean formatting.
         clean_message = self.format_message(message=message, loguru=False)
         raise error(clean_message)
 

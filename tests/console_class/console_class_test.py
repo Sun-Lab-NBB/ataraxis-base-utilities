@@ -1,10 +1,10 @@
 """Contains tests for classes and functions provided by the console_class.py module."""
 
 import re
+from typing import Any
+from pathlib import Path
 import tempfile
 from collections.abc import Generator
-from pathlib import Path
-from typing import Any
 
 from loguru import logger
 import pytest

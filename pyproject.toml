@@ -6,10 +6,11 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-base-utilities"
-version = "5.1.0"
-description = "A Python library that provides shared utility assets used to support most other Sun (NeuroAI) lab projects."
+version = "6.0.0"
+description = "Provides shared utility assets used to support most other Sun (NeuroAI) lab projects."
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.12,<3.15"
 authors = [
     { name = "Ivan Kondratyev" },
@@ -28,8 +29,6 @@ classifiers = [
     # Intended audience and project topic
     "Intended Audience :: Developers",
     "Topic :: Software Development",
-    # License
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     # Supported Python Versions
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -39,7 +38,7 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
     # Typing
-    "Typing :: Typed"
+    "Typing :: Typed",
 ]
 
 # Runtime project dependencies.
@@ -52,10 +51,8 @@ dependencies = [
 Homepage = "https://github.com/Sun-Lab-NBB/ataraxis-base-utilities"
 Documentation = "https://ataraxis-base-utilities-api-docs.netlify.app/"
 
-# Specifies additional dependencies that can be installed alongside the main library.
-[project.optional-dependencies]
-
-# Dependencies that support developing this project.
+# Development dependencies (PEP 735). Not published to PyPI.
+[dependency-groups]
 dev = [
     # Tox
     "tox>=4,<5",
@@ -63,28 +60,25 @@ dev = [
     "tox-uv>=1,<2",
 
     # Development Automation
-    "ataraxis-automation>=7,<8",
+    "ataraxis-automation>=8,<9",
 ]
 
-# In the future, callable scripts can be added here
-[project.scripts]
-
-# Specifies files that should not be included in the source-code distribution, but are also not part of gitignore.
+# Specifies files that should not be included in the source-code distribution.
 [tool.hatch.build.targets.sdist]
 exclude = [".github", "recipe"]
 
 # Specifies the library structure.
 [tool.hatch.build.targets.wheel]
-packages = ["src/ataraxis_base_utilities"]  # Specifies the library root directory to distribute.
+packages = ["src/ataraxis_base_utilities"]
 
 # Ruff Configuration.
 [tool.ruff]
-line-length = 120         # The maximum column length is set to 120 for this project
+line-length = 120         # Deviates from the commonly used '80' standard.
 indent-width = 4          # Same as black, indents are 4 spaces
 target-version = "py312"  # Targets the lowest supported version of python
-src = ["src"]             # The name of the source directory
+src = ["src"]             # The name of the root source code directory
 
-# Excludes 'service' .py files, such as the sphinx configuration file from linting.
+# Excludes 'service' .py files, such as the sphinx configuration file, from linting.
 extend-exclude = ["conf.py"]
 
 # Checks for all potential violations and uses the exclusions below to target-disable specific ones.
@@ -96,17 +90,17 @@ lint.ignore = [
     "C901",    # Sometimes complex functions are necessary
     "PLR0913", # Sometimes complex functions are necessary
     "PLR0912", # Sometimes complex functions are necessary
-    "PLR0915", # Sometimes complex type defenitions are necessary
+    "PLR0915", # Sometimes complex type definitions are necessary
     "PLR0911", # Sometimes complex return graphs are necessary
-    "TID252",  # Conflicts with library import management strategy
-    "ANN401",  # Interferes with intended library behavior
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
     "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
-    "D107",    # Project-specific, __init__ is documented inside the main class docstring where applicable
+    "D107",    # __init__ is documented inside the main class docstring where applicable
     "D205",    # Bugs out for file descriptions
-    "PLW0603", # While global statement usage is not ideal, it greatly streamlines certain development patterns
+    "PLW0603", # While global statement usage is not ideal, it streamlines certain development patterns
+    "TID252",  # Conflicts with library import management strategy
+    "ANN401",  # Interferes with intended library behavior
 ]
 
 # Additional formatting configurations
@@ -127,8 +121,8 @@ convention = "google"
 # Additional, file-specific 'ignore' directives
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = [
-    "F401",  # Imported but unused
-    "F403",  # Wildcard imports
+    "F401", # Imported but unused
+    "F403", # Wildcard imports
 ]
 "**/tests/**/*.py" = [
     "S101",     # Use of assert detected
@@ -151,7 +145,7 @@ convention = "google"
 [tool.ruff.lint.isort]
 case-sensitive = true              # Takes case into account when sorting imports
 combine-as-imports = true          # Combines multiple "as" imports for the same package
-force-wrap-aliases = true          # Wraps "as" imports so that each uses a separate line (after combining for package)
+force-wrap-aliases = true          # Wraps "as" imports so that each uses a separate line
 force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close
 length-sort = true                 # Places shorter imports first
 
@@ -191,7 +185,9 @@ exclude = [
 
 # This is used by the 'test' tox tasks to aggregate coverage data produced during pytest runtimes.
 [tool.coverage.paths]
-source = ["src/", ".tox/*/lib/python*/site-packages/"]  # Maps coverage measured in site-packages to source files in src
+
+# Maps coverage measured in site-packages to source files in src
+source = ["src/", ".tox/*/lib/python*/site-packages/"]
 
 # Same as above, specifies the output directory for the coverage .html report
 [tool.coverage.html]

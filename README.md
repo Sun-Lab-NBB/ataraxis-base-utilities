@@ -17,8 +17,9 @@ ___
 
 The primary focus of this library is to provide the unified message and error processing framework used across all
 other Sun lab projects instead of the built-in 'print,' 'logging,' and 'raise' assets. In addition to this framework, it
-also provides functions used to perform common filesystem operations (such as creating directories) and facilitate 
-efficient parallel data processing (such as chunking iterables into batches).
+also provides functions used to perform common filesystem operations (such as creating directories) and facilitate
+efficient parallel data processing (such as chunking iterables into batches). This library is part of the
+[Ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) framework for AI-assisted scientific hardware control.
 
 ___
 
@@ -330,6 +331,13 @@ Run any environment using `tox -e ENVIRONMENT`. For example, `tox -e lint`.
 ***Note,*** all pull requests for this project have to successfully complete the `tox` task before being merged.
 To expedite the task's runtime, use the `tox --parallel` command to run some tasks in parallel.
 
+### AI-Assisted Development
+
+Claude Code skills and other AI development assets for this project are distributed through the
+[ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) marketplace as part of the **automation** plugin. Install the
+plugin from the marketplace to make all associated skills and development tools available to compatible AI coding
+agents.
+
 ### Automation Troubleshooting
 
 Many packages used in `tox` automation pipelines (uv, mypy, ruff) and `tox` itself may experience runtime failures. In
@@ -341,7 +349,7 @@ ___
 
 ## Versioning
 
-This project uses [semantic versioning](https://semver.org/). See the 
+This project uses [semantic versioning](https://semver.org/). See the
 [tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities/tags) for the available project 
 releases.
 

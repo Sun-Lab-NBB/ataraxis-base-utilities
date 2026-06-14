@@ -140,7 +140,8 @@ def resolve_worker_count(
     """Determines the number of CPU cores to allocate for a processing job.
 
     Auto-detects available cores, subtracts ``reserved_cores``, and clamps the result to at least 1. A positive
-    ``requested_workers`` further caps the result. Any non-positive value requests all available cores.
+    ``requested_workers`` further caps the result. Any non-positive value requests all available cores. If the core
+    count cannot be auto-detected, the budget falls back to 1.
 
     Args:
         requested_workers: The maximum number of workers to allocate. Non-positive values request all available cores.
@@ -175,7 +176,8 @@ def resolve_worker_count(
 def resolve_parallel_job_capacity(workers_per_job: int) -> int:
     """Determines how many jobs can run in parallel given the per-job core allocation.
 
-    Divides the available core count by ``workers_per_job``, returning at least 1.
+    Divides the available core count by ``workers_per_job``, returning at least 1. If the core count cannot be
+    auto-detected, returns 1.
 
     Args:
         workers_per_job: The number of CPU cores each job requires. Must be >= 1.

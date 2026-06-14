@@ -138,7 +138,7 @@ class Console:
             tqdm bars regardless of the console's enabled state.
 
     Raises:
-        ValueError: If the input line_width number is not valid.
+        ValueError: If the input line_width is not valid, or if the input log_format is not a valid LogFormats member.
         TypeError: If the input log_directory is not a valid Path object.
     """
 
@@ -297,7 +297,7 @@ class Console:
             The formatted message string.
         """
         # For loguru-processed messages, uses a custom formatting that accounts for the prepended header. The header
-        # is assumed to be matching the standard defined in add_handles() method, which statically reserves 37
+        # is assumed to be matching the standard defined in _add_handles() method, which statically reserves 37
         # characters of the first line.
         if loguru:
             # Calculates indent and dedent parameters for the lines.
@@ -353,7 +353,7 @@ class Console:
                 as-is without text wrapping or timestamp prefixes.
 
         Raises:
-            ValueError: If the requested log_level is not one of the valid LogLevel members.
+            ValueError: If the requested level is not one of the valid LogLevel members.
         """
         # If the Console is disabled, returns without further processing.
         if not self.enabled:

@@ -15,6 +15,12 @@ from loguru import logger
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
+_LOGURU_HEADER_WIDTH: int = 37
+"""The number of leading characters the loguru header reserves on the first line of each formatted message."""
+
+_DEFAULT_LINE_WIDTH: int = 120
+"""The default maximum line width, in characters, used for message formatting."""
+
 
 class LogLevel(StrEnum):
     """Defines the valid logging levels for Console.echo() method calls."""
@@ -79,6 +85,7 @@ class ProgressBar:
         """Returns a string representation of the ProgressBar instance."""
         return f"ProgressBar(total={self._tqdm_bar.total}, n={self._tqdm_bar.n})"
 
+    # The parameter name 'n' is kept to mirror tqdm's public update(n=...) signature that this method wraps.
     def update(self, n: float = 1) -> None:
         """Advances the progress bar by the specified amount.
 
@@ -138,7 +145,7 @@ class Console:
             tqdm bars regardless of the console's enabled state.
 
     Raises:
-        ValueError: If the input line_width number is not valid.
+        ValueError: If the input line_width is not valid, or if the input log_format is not a valid LogFormats member.
         TypeError: If the input log_directory is not a valid Path object.
     """
 
@@ -146,7 +153,7 @@ class Console:
         self,
         log_directory: Path | None = None,
         log_format: str | LogFormats = LogFormats.LOG,
-        line_width: int = 120,
+        line_width: int = _DEFAULT_LINE_WIDTH,
         *,
         break_long_words: bool = False,
         break_on_hyphens: bool = False,
@@ -162,7 +169,10 @@ class Console:
             )
             raise ValueError(
                 textwrap.fill(
-                    text=message, width=120, break_on_hyphens=break_on_hyphens, break_long_words=break_long_words
+                    text=message,
+                    width=_DEFAULT_LINE_WIDTH,
+                    break_on_hyphens=break_on_hyphens,
+                    break_long_words=break_long_words,
                 )
             )
         self._line_width: int = line_width
@@ -183,7 +193,10 @@ class Console:
                 )
                 raise TypeError(
                     textwrap.fill(
-                        text=message, width=120, break_on_hyphens=break_on_hyphens, break_long_words=break_long_words
+                        text=message,
+                        width=_DEFAULT_LINE_WIDTH,
+                        break_on_hyphens=break_on_hyphens,
+                        break_long_words=break_long_words,
                     )
                 )
 
@@ -297,20 +310,20 @@ class Console:
             The formatted message string.
         """
         # For loguru-processed messages, uses a custom formatting that accounts for the prepended header. The header
-        # is assumed to be matching the standard defined in add_handles() method, which statically reserves 37
-        # characters of the first line.
+        # is assumed to be matching the standard defined in _add_handles() method, which reserves
+        # _LOGURU_HEADER_WIDTH characters of the first line.
         if loguru:
             # Calculates indent and dedent parameters for the lines.
-            first_line_width: int = self._line_width - 37  # Shortens the first line
-            subsequent_indent: str = " " * 37
+            first_line_width: int = self._line_width - _LOGURU_HEADER_WIDTH
+            subsequent_indent: str = " " * _LOGURU_HEADER_WIDTH
             lines: list[str] = []
 
             # Handles the first line by wrapping it to fit into the required width given the additional loguru header.
-            first_line: str = message[:first_line_width]  # Subtracts loguru header
-            if len(message) > first_line_width:  # Determines the wrapping point
+            first_line: str = message[:first_line_width]
+            if len(message) > first_line_width:
                 # Finds the last space in the first line to avoid breaking words.
                 last_space: int = first_line.rfind(" ")
-                if last_space != -1:  # Wraps the line
+                if last_space != -1:
                     first_line = first_line[:last_space]
 
             lines.append(first_line)
@@ -353,7 +366,7 @@ class Console:
                 as-is without text wrapping or timestamp prefixes.
 
         Raises:
-            ValueError: If the requested log_level is not one of the valid LogLevel members.
+            ValueError: If the requested level is not one of the valid LogLevel members.
         """
         # If the Console is disabled, returns without further processing.
         if not self.enabled:
@@ -485,11 +498,9 @@ class Console:
         exception_instance = error(message)
 
         if self.enabled and self.error_log_path is not None:
-            # Logs the error message at ERROR level
+            # Logs the error to the error log file before raising it, so the failure is recorded even if it is caught.
             formatted_message = self.format_message(message=message, loguru=True)
             log_message = f"Raising {type(exception_instance).__name__}: {formatted_message}"
-
-            # Always logs at ERROR level.
             logger.error(log_message)
 
         # Raises the error with clean formatting.
@@ -529,7 +540,6 @@ class Console:
             )
 
         # Message terminal-printing handle.
-        # noinspection LongLine
         logger.add(
             sys.stdout,
             format=(
@@ -543,8 +553,7 @@ class Console:
             enqueue=enqueue,
         )
 
-        # Error terminal-printing-handle.
-        # noinspection LongLine
+        # Error terminal-printing handle.
         logger.add(
             sys.stderr,
             format=(

@@ -10,6 +10,9 @@ from collections.abc import (
 
 from tqdm import tqdm
 
+_LOGURU_HEADER_WIDTH: int
+_DEFAULT_LINE_WIDTH: int
+
 class LogLevel(StrEnum):
     DEBUG = "debug"
     INFO = "info"
@@ -45,7 +48,7 @@ class Console:
         self,
         log_directory: Path | None = None,
         log_format: str | LogFormats = ...,
-        line_width: int = 120,
+        line_width: int = ...,
         *,
         break_long_words: bool = False,
         break_on_hyphens: bool = False,

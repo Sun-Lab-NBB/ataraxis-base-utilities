@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
 from ..console import console
 
-# Default dtype for scalar byte serialization and deserialization functions.
 _DEFAULT_SCALAR_DTYPE: np.dtype[Any] = np.dtype("<i8")
+"""The default dtype for scalar byte serialization and deserialization functions."""
 
 
 def ensure_list(
@@ -40,7 +40,7 @@ def ensure_list(
     """
     # Scalars are added to a list and returned as a one-item list. Scalars are handled first to avoid clashing with
     # iterable types.
-    if np.isscalar(input_item) or input_item is None:  # Covers Python scalars and NumPy scalars
+    if np.isscalar(input_item) or input_item is None:
         return [input_item]
     # Numpy arrays are processed based on their dimensionality. This has to do with the fact that zero-dimensional
     # numpy arrays are interpreted as scalars by some numpy methods and as arrays by others.
@@ -66,7 +66,6 @@ def ensure_list(
     )
     console.error(message=message, error=TypeError)
     # Unreachable: console.error() is NoReturn, but ruff cannot trace NoReturn through method calls (RET503).
-    # noinspection PyUnreachableCode
     raise TypeError(message)  # pragma: no cover
 
 
@@ -140,7 +139,8 @@ def resolve_worker_count(
     """Determines the number of CPU cores to allocate for a processing job.
 
     Auto-detects available cores, subtracts ``reserved_cores``, and clamps the result to at least 1. A positive
-    ``requested_workers`` further caps the result. Any non-positive value requests all available cores.
+    ``requested_workers`` further caps the result. Any non-positive value requests all available cores. If the core
+    count cannot be auto-detected, the budget falls back to 1.
 
     Args:
         requested_workers: The maximum number of workers to allocate. Non-positive values request all available cores.
@@ -175,7 +175,8 @@ def resolve_worker_count(
 def resolve_parallel_job_capacity(workers_per_job: int) -> int:
     """Determines how many jobs can run in parallel given the per-job core allocation.
 
-    Divides the available core count by ``workers_per_job``, returning at least 1.
+    Divides the available core count by ``workers_per_job``, returning at least 1. If the core count cannot be
+    auto-detected, returns 1.
 
     Args:
         workers_per_job: The number of CPU cores each job requires. Must be >= 1.

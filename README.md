@@ -1,6 +1,6 @@
 # ataraxis-base-utilities
 
-Provides shared utility assets used to support most other Sun (NeuroAI) lab projects.
+Provides shared utility assets used to support most other Ataraxis framework projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-base-utilities)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-base-utilities)
@@ -16,9 +16,9 @@ ___
 ## Detailed Description
 
 The primary focus of this library is to provide the unified message and error processing framework used across all
-other Sun lab projects instead of the built-in 'print,' 'logging,' and 'raise' assets. In addition to this framework, it
-also provides functions used to perform common filesystem operations (such as creating directories) and facilitate
-efficient parallel data processing (such as chunking iterables into batches). This library is part of the
+other Ataraxis framework projects instead of the built-in 'print,' 'logging,' and 'raise' assets. In addition to this
+framework, it also provides functions used to perform common filesystem operations (such as creating directories) and
+facilitate efficient parallel data processing (such as chunking iterables into batches). This library is part of the
 [Ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) framework for AI-assisted scientific hardware control.
 
 ___
@@ -27,7 +27,7 @@ ___
 
 - Supports Windows, Linux, and macOS.
 - Provides a unified approach to message and error formatting, printing, and logging through the Console class.
-- Provides a set of common utility functions frequently reused across other Sun lab projects.
+- Provides a set of common utility functions frequently reused across other Ataraxis framework projects.
 - Apache 2.0 License.
 
 ___
@@ -37,6 +37,8 @@ ___
 - [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Console](#console)
+  - [Standalone Methods](#standalone-methods)
 - [API Documentation](#api-documentation)
 - [Developers](#developers)
 - [Versioning](#versioning)
@@ -153,7 +155,7 @@ console.error(message="Error message", error=TypeError)
 ```
 
 #### Message Formatting
-All Console methods format input messages to fit the Sun lab's default width-limit of 120 characters. It is
+All Console methods format input messages to fit the Ataraxis framework's default width-limit of 120 characters. It is
 possible to directly access and use the formatter through the **format_message()** method:
 ```
 from ataraxis_base_utilities import console
@@ -174,17 +176,17 @@ print(formatted_message)
 ```
 
 #### Overriding Default Console Configuration
-The default Console instance exposed via the 'console' variable is used by all other Sun lab projects. Re-initializing
-and overriding the **console** variable overrides the Console configuration used by ***all*** Sun lab
-projects used by the same process. ***Note,*** overriding the default Console configuration is a prerequisite for
-enabling logging messages and errors to files and working with 'Debug' level messages.
+The default Console instance exposed via the 'console' variable is used by all other Ataraxis framework projects.
+Re-initializing and overriding the **console** variable overrides the Console configuration used by ***all***
+Ataraxis framework projects used by the same process. ***Note,*** overriding the default Console configuration is a
+prerequisite for enabling logging messages and errors to files and working with 'Debug' level messages.
 ```
 from ataraxis_base_utilities import console, Console, LogLevel, LogFormats
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-# Overwriting the default 'console' instance replaces the instance used by all other Sun lab projects running in the
-# same process as the overridden 'console'.
+# Overwriting the default 'console' instance replaces the instance used by all other Ataraxis framework projects
+# running in the same process as the overridden 'console'.
 console = Console()  # This is equivalent to using the 'default' configuration
 
 # Behaves like the default 'console' instance.
@@ -267,8 +269,8 @@ the Console class is **incompatible** with any other third-party library that us
 ### Standalone Methods
 The standalone methods are a collection of utility functions that either abstract away the boilerplate code for 
 common data manipulations or provide novel functionality not commonly available through popular Python libraries used 
-by other Sun lab projects. Generally, these methods are straightforward to use and do not require detailed explanation.
-See the API documentation below for details on available standalone methods.
+by other Ataraxis framework projects. Generally, these methods are straightforward to use and do not require detailed
+explanation. See the API documentation below for details on available standalone methods.
 
 ___
 
@@ -286,13 +288,14 @@ that want to modify the source code of this library.
 
 ### Installing the Project
 
-***Note,*** this installation method requires **mamba version 2.3.2 or above**. Currently, all Sun lab automation
-pipelines require that mamba is installed through the [miniforge3](https://github.com/conda-forge/miniforge) installer.
+***Note,*** this installation method requires **mamba version 2.3.2 or above**. Currently, all Ataraxis framework
+automation pipelines require that mamba is installed through the
+[miniforge3](https://github.com/conda-forge/miniforge) installer.
 
 1. Download this repository to the local machine using the preferred method, such as git-cloning.
 2. If the downloaded distribution is stored as a compressed archive, unpack it using the appropriate decompression tool.
 3. `cd` to the root directory of the prepared project distribution.
-4. Install the core Sun lab development dependencies into the ***base*** mamba environment via the
+4. Install the core Ataraxis framework development dependencies into the ***base*** mamba environment via the
    `mamba install tox uv tox-uv` command.
 5. Use the `tox -e create` command to create the project-specific development environment followed by
    `tox -e install` command to install the project into that environment as a library.

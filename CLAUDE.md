@@ -5,37 +5,35 @@
 At the beginning of each coding session, before making any code changes, you should build a comprehensive understanding
 of the codebase by invoking the `/explore-codebase` skill.
 
-This ensures you:
-- Understand the project architecture before modifying code
-- Follow existing patterns and conventions
-- Do not introduce inconsistencies or break integrations
-
 ## Style guide compliance
 
 You MUST invoke the appropriate style skill before performing ANY of the following tasks:
 
-| Task                                | Skill to invoke    |
-|-------------------------------------|--------------------|
-| Writing or modifying Python code    | `/python-style`    |
-| Writing or modifying README files   | `/readme-style`    |
-| Writing git commit messages         | `/commit`          |
-| Writing or modifying skill files    | `/skill-design`    |
-| Writing or modifying pyproject.toml | `/pyproject-style` |
-| Writing or modifying tox.ini        | `/tox-config`      |
-| Writing or modifying API docs       | `/api-docs`        |
+| Task                                    | Skill to invoke    |
+|-----------------------------------------|--------------------|
+| Writing or modifying Python code        | `/python-style`    |
+| Writing or modifying README files       | `/readme-style`    |
+| Writing git commit messages             | `/commit`          |
+| Writing or modifying skill files        | `/skill-design`    |
+| Writing or modifying pyproject.toml     | `/pyproject-style` |
+| Writing or modifying tox.ini            | `/tox-config`      |
+| Writing or modifying API docs           | `/api-docs`        |
+| Creating or modifying project structure | `/project-layout`  |
 
 Each skill contains a verification checklist that you MUST complete before submitting any work. Failure to invoke the
 appropriate skill results in style violations.
 
 ## Cross-referenced library verification
 
-Sun Lab projects often depend on other `ataraxis-*` or `sl-*` libraries. These libraries may be stored locally in the
-same parent directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`).
+This library is the foundational base of the Ataraxis framework and has no `ataraxis-*` runtime dependencies. Its
+only framework dependency is the development-time tool `ataraxis-automation`, which provides the `tox` automation CLI
+and documentation build tooling. Cross-referenced framework libraries are stored locally in the same parent
+directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`).
 
-**Before writing code that interacts with a cross-referenced library, you MUST:**
+**Before writing code or automation that interacts with a cross-referenced library (such as `ataraxis-automation`),
+you MUST:**
 
-1. **Check for local version**: Look for the library in the parent directory (e.g., `../ataraxis-time/`,
-   `../ataraxis-data-structures/`).
+1. **Check for local version**: Look for the library in the parent directory (e.g., `../ataraxis-automation/`).
 
 2. **Compare versions**: If a local copy exists, compare its version against the latest release or main branch on
    GitHub:
@@ -51,32 +49,36 @@ same parent directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`
 4. **Proceed with correct source**: Use whichever version the user selects as the authoritative reference for API
    usage, patterns, and documentation.
 
-**Why this matters**: Skills and documentation may reference outdated APIs. Always verify against the actual library
-state to prevent integration errors.
-
 ## Available skills
 
-| Skill                | Description                                                               |
-|----------------------|---------------------------------------------------------------------------|
-| `/explore-codebase`  | Perform in-depth codebase exploration at session start                    |
-| `/python-style`      | Apply Sun Lab Python coding conventions (REQUIRED for all Python changes) |
-| `/readme-style`      | Apply Sun Lab README conventions (REQUIRED for README changes)            |
-| `/commit`            | Draft Sun Lab style-compliant git commit messages                         |
-| `/skill-design`      | Generate and verify skill files and CLAUDE.md project instructions        |
-| `/pyproject-style`   | Apply Sun Lab pyproject.toml conventions                                  |
-| `/tox-config`        | Apply Sun Lab tox.ini conventions                                         |
-| `/api-docs`          | Apply Sun Lab API documentation conventions                               |
+| Skill                   | Description                                                                          |
+|-------------------------|--------------------------------------------------------------------------------------|
+| `/explore-codebase`     | Perform in-depth codebase exploration at session start                               |
+| `/explore-dependencies` | Build a live API snapshot of installed Ataraxis dependencies                         |
+| `/python-style`         | Apply Ataraxis framework Python coding conventions (REQUIRED for all Python changes) |
+| `/readme-style`         | Apply Ataraxis framework README conventions (REQUIRED for README changes)            |
+| `/pyproject-style`      | Apply Ataraxis framework pyproject.toml conventions                                  |
+| `/tox-config`           | Apply Ataraxis framework tox.ini conventions                                         |
+| `/api-docs`             | Apply Ataraxis framework API documentation conventions                               |
+| `/project-layout`       | Apply Ataraxis framework project directory structure conventions                     |
+| `/skill-design`         | Generate and verify skill files and CLAUDE.md project instructions                   |
+| `/audit-facts`          | Audit documentation files for factual accuracy against the source code               |
+| `/audit-style`          | Audit source, config, and documentation files for style-guide compliance             |
+| `/commit`               | Draft Ataraxis framework style-compliant git commit messages                         |
+| `/pr`                   | Draft Ataraxis framework style-compliant pull request summaries                      |
+| `/release`              | Draft Ataraxis framework style-compliant release notes                               |
 
 ## Downstream library integration
 
-This library is a dependency for virtually all other `ataraxis-*` and `sl-*` libraries in the Sun Lab ecosystem.
-Changes to the public API affect all downstream projects. You MUST maintain backwards compatibility when modifying
-exported classes, functions, or constants unless the user explicitly requests a breaking change.
+This library is a dependency for virtually all other `ataraxis-*` and `sollertia-*` libraries in the Ataraxis
+framework ecosystem. Changes to the public API affect all downstream projects. You MUST maintain backwards
+compatibility when modifying exported classes, functions, or constants unless the user explicitly requests a
+breaking change.
 
 ## Project context
 
 This is **ataraxis-base-utilities**, a foundational Python library that provides unified message handling, error
-management, and common utility functions for all Sun Lab projects at Cornell University.
+management, and common utility functions for all Ataraxis framework projects at Cornell University.
 
 ### Key areas
 
@@ -91,9 +93,9 @@ management, and common utility functions for all Sun Lab projects at Cornell Uni
 ### Architecture
 
 - **Console module**: The core `Console` class wraps loguru to provide a unified message and error handling framework.
-  The global `console` instance is pre-configured and shared across all Sun Lab projects. Includes `ProgressBar` for
-  tqdm-based progress tracking, `LogLevel` and `LogFormats` enumerations, and a `temporarily_enabled()` context
-  manager.
+  The global `console` instance is pre-configured and shared across all Ataraxis framework projects. Includes
+  `ProgressBar` for tqdm-based progress tracking, `LogLevel` and `LogFormats` enumerations, and a
+  `temporarily_enabled()` context manager.
 - **Standalone methods**: Utility functions for list conversion (`ensure_list`), iterable chunking
   (`chunk_iterable`), error formatting (`error_format`), CPU core resolution (`resolve_worker_count`,
   `resolve_parallel_job_capacity`), and NumPy byte serialization (`convert_scalar_to_bytes`,
@@ -133,7 +135,7 @@ management, and common utility functions for all Sun Lab projects at Cornell Uni
 
 1. Review `src/ataraxis_base_utilities/console/console_class.py` for current implementation
 2. Understand the loguru integration and three-tier logging (debug, message, error)
-3. Maintain backwards compatibility — this library is used by all other Sun Lab projects
+3. Maintain backwards compatibility — this library is used by all other Ataraxis framework projects
 4. Test changes thoroughly as they affect the entire ecosystem
 
 **Adding utility functions:**

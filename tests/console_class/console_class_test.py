@@ -9,7 +9,7 @@ from collections.abc import Generator
 from loguru import logger
 import pytest
 
-from ataraxis_base_utilities.console.console_class import (
+from ataraxis_base_utilities import (
     Console,
     LogLevel,
     LogFormats,
@@ -83,9 +83,7 @@ def test_console_initialization_errors(temp_dir: Path) -> None:
         Console(line_width=-5)
 
     # Tests invalid log_directory type
-    # noinspection PyTypeChecker
     with pytest.raises(TypeError, match="Invalid 'log_directory' argument"):
-        # noinspection PyTypeChecker
         Console(log_directory="not_a_path")
 
 
@@ -111,24 +109,22 @@ def test_console_enable_disable() -> None:
     # Initially disabled
     assert not test_console.enabled
 
-    # Enable
     test_console.enable()
     assert test_console.enabled
 
-    # Disable
     test_console.disable()
     assert not test_console.enabled
 
 
 def test_console_properties(tmp_path: Path) -> None:
     """Verifies the functionality of Console class property getters."""
-    # Test without the log directory
+    # Tests without the log directory
     test_console = Console()
     assert test_console.debug_log_path is None
     assert test_console.message_log_path is None
     assert test_console.error_log_path is None
 
-    # Test with the log directory
+    # Tests with the log directory
     log_dir = tmp_path / "logs"
     test_console_with_logs = Console(log_directory=log_dir, log_format=LogFormats.JSON)
     assert test_console_with_logs.debug_log_path == log_dir / "debug.json"
@@ -139,7 +135,7 @@ def test_console_properties(tmp_path: Path) -> None:
 def test_ensure_directory_exists() -> None:
     """Verifies the functionality of ensure_directory_exists() standalone function."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Test with a directory path
+        # Tests with a directory path
         dir_path = Path(temp_dir) / "test_dir"
         ensure_directory_exists(path=dir_path)
         assert dir_path.exists() and dir_path.is_dir()
@@ -167,7 +163,7 @@ def test_console_format_message() -> None:
     test_console = Console(line_width=80)
     message = "This is a long message that should be wrapped properly according to the specified parameters"
 
-    # Test non-loguru wrapping
+    # Tests non-loguru wrapping
     formatted = test_console.format_message(message=message, loguru=False)
     assert len(max(formatted.split("\n"), key=len)) <= 80
 
@@ -236,7 +232,7 @@ def test_console_echo_invalid_level() -> None:
     test_console = Console()
     test_console.enable()
 
-    # Test with invalid log level
+    # Tests with invalid log level
     with pytest.raises(ValueError, match="Unable to echo the requested message"):
         test_console.echo(message="Test message", level="INVALID_LEVEL")
 
@@ -248,7 +244,7 @@ def test_console_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> No
     test_console = Console(log_directory=log_dir)
     test_console.enable()
 
-    # Test basic error raising
+    # Tests basic error raising
     with pytest.raises(RuntimeError, match="Test error"):
         test_console.error(message="Test error")
 
@@ -266,7 +262,7 @@ def test_console_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> No
     with pytest.raises(ValueError, match="Custom error"):
         test_console.error(message="Custom error", error=ValueError)
 
-    # Test with the disabled console (should still raise but not log)
+    # Tests with the disabled console (should still raise but not log)
     test_console.disable()
     with pytest.raises(TypeError, match="Disabled error"):
         test_console.error(message="Disabled error", error=TypeError)
@@ -319,12 +315,10 @@ def test_console_add_handles(tmp_path: Path) -> None:
     test_console = Console(log_directory=log_dir, debug=True)
 
     # Should create loguru handles
-    # noinspection PyUnresolvedReferences
     initial_handler_count = len(logger._core.handlers)
     test_console._add_handles(debug=True, enqueue=False)
 
     # Should have added handles (exact count depends on configuration)
-    # noinspection PyUnresolvedReferences
     assert len(logger._core.handlers) >= initial_handler_count
 
 

@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ataraxis-base-utilities"
 version = "6.0.0"
-description = "Provides shared utility assets used to support most other Sun (NeuroAI) lab projects."
+description = "Provides shared utility assets used to support most other Ataraxis framework projects."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -20,7 +20,7 @@ maintainers = [
 ]
 
 # The list of keywords that describe the project
-keywords = ["utilities", "utility-classes", "console", "ataraxis", "logging", "sunlab"]
+keywords = ["utilities", "utility-classes", "console", "ataraxis", "logging"]
 
 # Additional classifiers used by PyPI to group repositories.
 classifiers = [

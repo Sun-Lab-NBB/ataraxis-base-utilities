@@ -1,7 +1,7 @@
 Welcome to ataraxis-base-utilities API documentation page
 =========================================================
 
-Provides shared utility assets used to support most other Sun (NeuroAI) lab projects.
+Provides shared utility assets used to support most other Ataraxis framework projects.
 
 This library is part of the `Ataraxis <https://github.com/Sun-Lab-NBB/ataraxis>`_ framework for AI-assisted scientific
 hardware control, developed in the `Sun (NeuroAI) lab <https://neuroai.github.io/sunlab/>`_ at Cornell University.

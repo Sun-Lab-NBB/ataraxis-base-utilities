@@ -19,7 +19,6 @@ from ataraxis_base_utilities import (
 )
 
 
-# noinspection PyRedundantParentheses
 @pytest.mark.parametrize(
     "input_item, expected",
     [
@@ -55,12 +54,10 @@ def test_ensure_list_error() -> None:
         f"Unable to convert the input item to a Python list, as items of type {type(object()).__name__} are not "
         f"supported."
     )
-    # noinspection PyTypeChecker
     with pytest.raises(TypeError, match=error_format(message=message)):
         ensure_list(input_item=object())
 
 
-# noinspection PyRedundantParentheses
 @pytest.mark.parametrize(
     "input_iterable, chunk_size, expected_chunks",
     [
@@ -92,7 +89,6 @@ def test_chunk_iterable_error() -> None:
         f"but encountered {1} of type {type(1).__name__}."
     )
     with pytest.raises(TypeError, match=error_format(message=message)):
-        # noinspection PyTypeChecker
         list(chunk_iterable(iterable=1, chunk_size=2))
 
     message = (
@@ -198,18 +194,18 @@ def test_convert_scalar_to_bytes_cache() -> None:
     dtype = np.dtype("<i4")
 
     # Same value+dtype should return equivalent arrays.
-    a = convert_scalar_to_bytes(value=42, dtype=dtype)
-    b = convert_scalar_to_bytes(value=42, dtype=dtype)
-    assert np.array_equal(a, b)
+    first_result = convert_scalar_to_bytes(value=42, dtype=dtype)
+    second_result = convert_scalar_to_bytes(value=42, dtype=dtype)
+    assert np.array_equal(first_result, second_result)
 
     # Different values should produce different byte arrays.
-    c = convert_scalar_to_bytes(value=43, dtype=dtype)
-    assert not np.array_equal(a, c)
+    different_value_result = convert_scalar_to_bytes(value=43, dtype=dtype)
+    assert not np.array_equal(first_result, different_value_result)
 
     # Mutating one result should not affect subsequent calls (copy safety).
-    a[0] = 0
-    d = convert_scalar_to_bytes(value=42, dtype=dtype)
-    assert np.array_equal(b, d)
+    first_result[0] = 0
+    post_mutation_result = convert_scalar_to_bytes(value=42, dtype=dtype)
+    assert np.array_equal(second_result, post_mutation_result)
 
 
 @pytest.mark.parametrize(
@@ -252,7 +248,6 @@ def test_convert_bytes_to_scalar_error() -> None:
     # Wrong dtype: not uint8.
     wrong_dtype = np.array([1, 2, 3, 4], dtype=np.int32)
     with pytest.raises(TypeError, match="Invalid 'data' type"):
-        # noinspection PyTypeChecker
         convert_bytes_to_scalar(data=wrong_dtype, dtype=np.dtype("<i4"))
 
 

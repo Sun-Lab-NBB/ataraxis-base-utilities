@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
 from ..console import console
 
-# Default dtype for scalar byte serialization and deserialization functions.
 _DEFAULT_SCALAR_DTYPE: np.dtype[Any] = np.dtype("<i8")
+"""The default dtype for scalar byte serialization and deserialization functions."""
 
 
 def ensure_list(
@@ -40,7 +40,7 @@ def ensure_list(
     """
     # Scalars are added to a list and returned as a one-item list. Scalars are handled first to avoid clashing with
     # iterable types.
-    if np.isscalar(input_item) or input_item is None:  # Covers Python scalars and NumPy scalars
+    if np.isscalar(input_item) or input_item is None:
         return [input_item]
     # Numpy arrays are processed based on their dimensionality. This has to do with the fact that zero-dimensional
     # numpy arrays are interpreted as scalars by some numpy methods and as arrays by others.
@@ -66,7 +66,6 @@ def ensure_list(
     )
     console.error(message=message, error=TypeError)
     # Unreachable: console.error() is NoReturn, but ruff cannot trace NoReturn through method calls (RET503).
-    # noinspection PyUnreachableCode
     raise TypeError(message)  # pragma: no cover
 
 

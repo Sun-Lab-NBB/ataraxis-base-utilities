@@ -5,11 +5,6 @@
 At the beginning of each coding session, before making any code changes, you should build a comprehensive understanding
 of the codebase by invoking the `/explore-codebase` skill.
 
-This ensures you:
-- Understand the project architecture before modifying code
-- Follow existing patterns and conventions
-- Do not introduce inconsistencies or break integrations
-
 ## Style guide compliance
 
 You MUST invoke the appropriate style skill before performing ANY of the following tasks:
@@ -53,9 +48,6 @@ you MUST:**
 
 4. **Proceed with correct source**: Use whichever version the user selects as the authoritative reference for API
    usage, patterns, and documentation.
-
-**Why this matters**: Skills and documentation may reference outdated APIs. Always verify against the actual library
-state to prevent integration errors.
 
 ## Available skills
 

@@ -60,11 +60,11 @@ dev = [
     "uv>=0,<1",
     "tox-uv>=1,<2",
 
-    # Type Stubs
-    "types-tqdm>=4,<5",
-
     # Development Automation
     "ataraxis-automation>=8,<9",
+
+    # Types
+    "types-tqdm>=4,<5",
 ]
 
 # Specifies files that should not be included in the source-code distribution.
@@ -98,7 +98,7 @@ lint.ignore = [
     "PLR0911", # Sometimes complex return graphs are necessary
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
-    "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
+    "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
     "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "D107",    # __init__ is documented inside the main class docstring where applicable
     "D205",    # Bugs out for file descriptions
@@ -150,7 +150,7 @@ convention = "google"
 case-sensitive = true              # Takes case into account when sorting imports
 combine-as-imports = true          # Combines multiple "as" imports for the same package
 force-wrap-aliases = true          # Wraps "as" imports so that each uses a separate line
-force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close
+force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close together
 length-sort = true                 # Places shorter imports first
 
 # MyPy configuration section.

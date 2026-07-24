@@ -102,26 +102,28 @@ def test_chunk_iterable_error() -> None:
 @pytest.mark.parametrize(
     "requested, reserved, mock_cpu, expected",
     [
-        # Explicit request within budget: 8 requested, budget = 16 - 2 = 14, returns 8.
+        # Explicit request within the physical core count is honored exactly, reserved cores do not apply: 8 on 16.
         (8, 2, 16, 8),
-        # Explicit request exceeding budget: 50 requested, budget = 16 - 2 = 14, clamped to 14.
-        (50, 2, 16, 14),
-        # Zero requests all available: budget = 16 - 2 = 14.
+        # Explicit request over the physical core count is clamped to every core, not to available minus reserved.
+        (50, 2, 16, 16),
+        # Explicit request for every core is honored in full, the reserved cores are not held back.
+        (16, 2, 16, 16),
+        # Zero auto-resolves to all cores minus the reserved cores: 16 - 2 = 14.
         (0, 2, 16, 14),
-        # Negative requests all available (same as zero): budget = 16 - 2 = 14.
+        # Negative auto-resolves the same as zero: 16 - 2 = 14.
         (-1, 2, 16, 14),
-        # Budget clamps to 1 when available equals reserved.
+        # Auto-resolution clamps to 1 when the available cores equal the reserved cores.
         (0, 4, 4, 1),
-        # Zero reserved cores: full core count returned.
+        # Auto-resolution with zero reserved cores returns the full core count.
         (0, 0, 8, 8),
-        # cpu_count returns None, falls back to reserved_cores. max(1, reserved - reserved) = 1.
+        # cpu_count returns None, so the budget falls back to 1.
         (0, 2, None, 1),
-        # Explicit request of 1 on a large machine: returns 1.
+        # Explicit request of 1 on a large machine returns 1.
         (1, 2, 16, 1),
     ],
 )
 def test_resolve_worker_count(requested: int, reserved: int, mock_cpu: int | None, expected: int) -> None:
-    """Verifies resolve_worker_count() for capped requests, auto-detection, and None cpu_count fallback."""
+    """Verifies resolve_worker_count() honors explicit requests, reserves only on auto-resolution, and floors at 1."""
     with patch("ataraxis_base_utilities.standalone_methods.standalone_methods.cpu_count", return_value=mock_cpu):
         result = resolve_worker_count(requested_workers=requested, reserved_cores=reserved)
     assert result == expected

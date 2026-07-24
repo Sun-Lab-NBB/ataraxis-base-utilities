@@ -138,13 +138,17 @@ def resolve_worker_count(
 ) -> int:
     """Determines the number of CPU cores to allocate for a processing job.
 
-    Auto-detects available cores, subtracts ``reserved_cores``, and clamps the result to at least 1. A positive
-    ``requested_workers`` further caps the result. Any non-positive value requests all available cores. If the core
-    count cannot be auto-detected, the budget falls back to 1.
+    A positive ``requested_workers`` is honored exactly, capped only by the physical core count, so an explicit
+    request can claim every core on the machine. A non-positive ``requested_workers`` auto-resolves to every available
+    core minus ``reserved_cores``, clamped to at least 1, leaving headroom for the host system. If the core count
+    cannot be auto-detected, the budget falls back to 1. The reserved cores apply only when the worker count
+    auto-resolves.
 
     Args:
-        requested_workers: The maximum number of workers to allocate. Non-positive values request all available cores.
-        reserved_cores: The number of cores to reserve for system use. Must be >= 0.
+        requested_workers: The number of workers to allocate. A positive value is honored up to the physical core
+            count. Non-positive values auto-resolve to all available cores minus the reserved cores.
+        reserved_cores: The number of cores to reserve for host-system use during auto-resolution. Ignored for a
+            positive ``requested_workers``. Must be >= 0.
 
     Returns:
         The number of CPU cores to use, always >= 1.
@@ -159,17 +163,18 @@ def resolve_worker_count(
         )
         console.error(message=message, error=ValueError)
 
-    # Determines the usable core budget. Falls back to reserved_cores if cpu_count() returns None.
     available = cpu_count()
     if available is None:
-        available = reserved_cores
-    budget = max(1, available - reserved_cores)
+        return 1
 
-    # If the caller specified a worker cap, respects it against the budget.
+    # A positive request is honored exactly, capped only by the physical core count. The reserved cores apply solely
+    # to auto-resolution, so an explicit request can claim every core, which is the intended behavior on a dedicated
+    # compute node where every core serves the job.
     if requested_workers > 0:
-        return min(requested_workers, budget)
+        return min(requested_workers, available)
 
-    return budget
+    # A non-positive request auto-resolves to every core minus the reserved system cores, clamped to at least one.
+    return max(1, available - reserved_cores)
 
 
 def resolve_parallel_job_capacity(workers_per_job: int) -> int:

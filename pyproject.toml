@@ -48,6 +48,7 @@ dependencies = [
     "tqdm>=4,<5",
 ]
 
+# Project repository and hosted documentation URLs.
 [project.urls]
 Homepage = "https://github.com/Sun-Lab-NBB/ataraxis-base-utilities"
 Documentation = "https://ataraxis-base-utilities-api-docs.netlify.app/"
@@ -61,7 +62,7 @@ dev = [
     "tox-uv>=1,<2",
 
     # Development Automation
-    "ataraxis-automation>=8,<9",
+    "ataraxis-automation>=9,<10",
 
     # Types
     "types-tqdm>=4,<5",
@@ -90,12 +91,16 @@ lint.select = ["ALL"]
 
 # General ignore directives
 lint.ignore = [
+    # Shared corpus. These entries are present in every Ataraxis framework and Sollertia platform project.
     "W291",    # Conflicts with docstring formatting
+    "ANN401",  # While suboptimal, ANY is a helpful type when used with caution
+    "BLE001",  # Broad exception handling is necessary at library boundaries
     "C901",    # Sometimes complex functions are necessary
-    "PLR0913", # Sometimes complex functions are necessary
-    "PLR0912", # Sometimes complex functions are necessary
-    "PLR0915", # Sometimes complex type definitions are necessary
     "PLR0911", # Sometimes complex return graphs are necessary
+    "PLR0912", # Sometimes complex functions are necessary
+    "PLR0913", # Sometimes complex functions are necessary
+    "PLR0915", # Sometimes complex type definitions are necessary
+    "PLR0917", # Call sites pass keyword arguments, so the positional count is immaterial
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
     "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
@@ -103,8 +108,8 @@ lint.ignore = [
     "D107",    # __init__ is documented inside the main class docstring where applicable
     "D205",    # Bugs out for file descriptions
     "PLW0603", # While global statement usage is not ideal, it streamlines certain development patterns
-    "TID252",  # Conflicts with library import management strategy
-    "ANN401",  # Interferes with intended library behavior
+    "TID252",  # Conflicts with the library import management strategy
+    "CPY001",  # The license is declared in the LICENSE file and the project metadata
 ]
 
 # Additional formatting configurations
@@ -128,22 +133,26 @@ convention = "google"
     "F401", # Imported but unused
     "F403", # Wildcard imports
 ]
-"**/tests/**/*.py" = [
-    "S101",     # Use of assert detected
-    "SLF001",   # Private member accessed
-    "PLR2004",  # Magic value used in comparison
-    "ANN001",   # Missing type annotation for function argument
-    "ANN201",   # Missing return type annotation for public function
-    "ARG001",   # Unused function argument
-    "D202",     # No blank lines allowed after function docstring
-    "PT006",    # Wrong type passed to first argument of pytest.mark.parametrize
-    "PT014",    # Duplicate of test case
-    "PT018",    # Assertion should be broken down into multiple parts
-    "PTH123",   # open() should be replaced by Path.open()
-    "B905",     # zip() without explicit strict parameter
-    "UP003",    # Use type instead of type(...)
-    "UP015",    # Unnecessary mode argument
-    "UP035",    # Import from collections.abc instead
+"tests/**/*.py" = [
+    # Shared test corpus. These entries are present in every Ataraxis framework and Sollertia platform project.
+    "S101",    # Tests assert by design
+    "PLR2004", # Expected values are clearer inline than as named constants
+    "INP001",  # The test directory is not an importable package
+    "SLF001",  # Tests exercise private module members directly
+    "PT006",   # Parametrize argument names are declared as a single comma-separated string
+    "ARG001",  # Pytest injects fixtures that individual tests may not reference
+    "D",       # Test names and inline comments carry the intent that docstrings carry in library code
+    "ANN",     # Test functions and mock helpers do not need annotations
+
+    # Project-specific
+    "PT018",   # Composite assertions keep the conditions of a single behavior in one statement
+    "PT012",   # Expected-failure blocks wrap the context manager that the raising call runs inside
+    "SIM117",  # Nesting the raises block inside the tested context manager keeps the two roles distinct
+    "EM101",   # Messages raised to trigger the tested behavior are clearer inline than as named variables
+    "TRY003",  # Messages raised to trigger the tested behavior are defined at the raise site by design
+    "PT014",   # A parenthesized scalar case documents an input form that evaluates to a duplicate
+    "B905",    # The zipped sequences are asserted to have equal length on the preceding line
+    "UP003",   # type(...) calls mirror the type-name interpolation performed by the tested function
 ]
 
 [tool.ruff.lint.isort]
@@ -190,15 +199,25 @@ exclude = [
 # This is used by the 'test' tox tasks to aggregate coverage data produced during pytest runtimes.
 [tool.coverage.paths]
 
-# Maps coverage measured in site-packages to source files in src
-source = ["src/", ".tox/*/lib/python*/site-packages/"]
+# Maps coverage measured in site-packages to source files in src. The second pattern matches the POSIX virtual
+# environment layout and the third matches the Windows layout, which omits the 'python*' path component. Both are
+# required for the 'coverage' task to merge the data measured by each 'test' task into a single record per source file.
+# Without the merge, every statement is judged against a single python version, so any statement that only executes on
+# some of the tested versions is misreported as uncovered.
+source = [
+    "src/",
+    ".tox/*/lib/python*/site-packages/",
+    ".tox/*/Lib/site-packages/",
+]
 
 # Same as above, specifies the output directory for the coverage .html report
 [tool.coverage.html]
 directory = "reports/coverage_html"
 
-# Specifies additional ignore directives
+# Specifies the coverage gate and additional ignore directives
 [tool.coverage.report]
+fail_under = 100     # Requires the test suite to cover every measured statement
+show_missing = true  # Lists the statements missed by the test suite, so a failed check names the lines to cover
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",

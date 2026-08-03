@@ -79,10 +79,12 @@ ___
 ## Usage
 
 ### Console
-The Console class provides a unified [loguru](https://github.com/Delgan/loguru)-based framework for working with 
+
+The Console class provides a unified [loguru](https://github.com/Delgan/loguru)-based framework for working with
 messages and errors to display them in the terminal and (optionally) log them to files.
 
 #### Quickstart
+
 Most class functionality revolves around two methods: `echo()` and `error()`. To make adoption as frictionless
 as possible, a preconfigured Console instance is exposed as part of the library initialization via the `console` global
 variable:
@@ -93,10 +95,10 @@ from ataraxis_base_utilities import console
 console.enable()
 
 # Use this instead of 'print'!
-console.echo("This is a better 'print'.")
+console.echo(message="This is a better 'print'.")
 
 # Use this instead of 'raise'!
-console.error("This is a 'raise' with logging.")
+console.error(message="This is a 'raise' with consistent formatting.")
 ```
 
 ***Note,*** the preconfigured class does **not** log processed messages and errors to files. To enable file-logging,
@@ -104,44 +106,48 @@ re-initialize the Console class with the appropriate
 [configuration parameters](#overriding-default-console-configuration).
 
 #### Working with Messages
-All Console's functionality for working with messages is realized through the **echo()** method. Depending on
+
+All of the Console's functionality for working with messages is realized through the **echo()** method. Depending on
 class configuration, the method can be flexibly used to display the input messages in the terminal and log them to
-files. Each message is handed according to its **LogLevel** (urgency level) and the processing Console's configuration.
+files. Each message is handled according to its **LogLevel** (urgency level) and the processing Console's configuration.
 ```
 from ataraxis_base_utilities import console, LogLevel
 console.enable()
 
 # By default, console is configured to NOT print debug messages. Calling echo for a message at 'Debug' level has no
-# effect
-console.echo(message='Debug is disabled by default.', level=LogLevel.DEBUG)
+# effect.
+console.echo(message="Debug is disabled by default.", level=LogLevel.DEBUG)
 
 # Messages at all levels other than 'Debug' are always printed if the console is enabled.
-console.echo(message='Information messages are enabled!', level=LogLevel.INFO)
-console.echo(message='Error messages are enabled!', level=LogLevel.ERROR)
+console.echo(message="Information messages are enabled!", level=LogLevel.INFO)
+console.echo(message="Error messages are enabled!", level=LogLevel.ERROR)
 
 # Disabled console does not print any messages.
 console.disable()
-console.echo(message='Disabled console does not print messages.', level=LogLevel.INFO)
+console.echo(message="Disabled console does not print messages.", level=LogLevel.INFO)
 ```
 
 #### Raw Echo Mode
+
 The `echo()` method supports a `raw` mode that bypasses message formatting and loguru headers. This is useful for
 displaying pre-formatted content such as tables or DataFrames that should not be wrapped or indented:
 ```
 from ataraxis_base_utilities import console
 console.enable()
 
-console.echo("Device and Axis Information:")
-console.echo(formatted_table, raw=True)
+console.echo(message="Device and Axis Information:")
+console.echo(message=formatted_table, raw=True)
 ```
 
 When `raw=True`, the message is output without a timestamp header or level prefix. Log-level routing and file logging
 still function normally.
 
 #### Working with Errors
+
 The Console class treats errors as a special class of messages, handled through the **error()** method. Error
 messages are always handled at the **Error** log level and always interrupt the normal runtime flow of the
-caller program by calling the built-in 'raise' method after logging the message.
+caller program by calling the built-in 'raise' statement. When the Console is enabled and configured with a log
+directory, the message is logged before the exception is raised.
 ```
 from ataraxis_base_utilities import console
 
@@ -155,14 +161,15 @@ console.error(message="Error message", error=TypeError)
 ```
 
 #### Message Formatting
-All Console methods format input messages to fit the Ataraxis framework's default width-limit of 120 characters. It is
-possible to directly access and use the formatter through the **format_message()** method:
+
+Outside raw mode, all Console methods format input messages to fit the Ataraxis framework's default width-limit of
+120 characters. It is possible to directly access and use the formatter through the **format_message()** method:
 ```
 from ataraxis_base_utilities import console
 
 # This long message does not display well without additional formatting
 message = (
-    "This is a long message that exceeds our default limit of 120 characters. Therefore, it needs to be wrapped to "
+    "This is a long message that exceeds the default limit of 120 characters. Therefore, it needs to be wrapped to "
     "appear correctly when printed to the terminal (or saved to a log file)."
 )
 print(message)
@@ -171,33 +178,35 @@ print(message)
 print()
 
 # This formats the message according to the current (default) Console configuration.
-formatted_message = console.format_message(message)
+formatted_message = console.format_message(message=message)
 print(formatted_message)
 ```
 
 #### Overriding Default Console Configuration
+
 The default Console instance exposed via the 'console' variable is used by all other Ataraxis framework projects.
-Re-initializing and overriding the **console** variable overrides the Console configuration used by ***all***
-Ataraxis framework projects used by the same process. ***Note,*** overriding the default Console configuration is a
-prerequisite for enabling logging messages and errors to files and working with 'Debug' level messages.
+Initializing a new Console reconfigures the process-wide loguru backend, so message routing and file-logging behavior
+change for ***all*** Ataraxis framework projects running in the same process. Rebinding the 'console' name, as the
+example below does, applies only to the module that rebinds it, and other projects keep the instance they imported.
+***Note,*** re-initializing the Console is a prerequisite for enabling logging messages and errors to files and
+working with 'Debug' level messages.
 ```
 from ataraxis_base_utilities import console, Console, LogLevel, LogFormats
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-# Overwriting the default 'console' instance replaces the instance used by all other Ataraxis framework projects
-# running in the same process as the overridden 'console'.
+# The name bound below is local to the module that binds it.
 console = Console()  # This is equivalent to using the 'default' configuration
 
 # Behaves like the default 'console' instance.
 console.enable()
-console.echo("Not printed by default.", level=LogLevel.DEBUG)
+console.echo(message="Not printed by default.", level=LogLevel.DEBUG)
 
-# Reinitializing the Console allows overriding default runtime parameters. For example, it can be used to enabled
+# Reinitializing the Console allows overriding default runtime parameters. For example, it can be used to enable
 # handling 'Debug' messages.
 console = Console(debug=True)
 console.enable()  # Reinitializing the console resets it to the 'disabled' state.
-console.echo("Debug messages are now enabled!", level=LogLevel.DEBUG)
+console.echo(message="Debug messages are now enabled!", level=LogLevel.DEBUG)
 
 # Another important configuration step that requires reinitializing the console is enabling logging messages and errors
 # to files, which is disabled by default.
@@ -210,14 +219,15 @@ with TemporaryDirectory() as log_directory:
 
     # Prints and saves the debug message to a log file.
     console.enable()
-    console.echo("Debug messages are now logged to the debug log file!", level=LogLevel.DEBUG)
+    console.echo(message="Debug messages are now logged to the debug log file!", level=LogLevel.DEBUG)
 
     # The message can now be viewed by reading the .txt log file.
     with console.debug_log_path.open("r") as file:
-        console.echo(file.read())
+        console.echo(message=file.read())
 ```
 
 #### Temporarily Enabling Console
+
 The `temporarily_enabled()` context manager temporarily enables the console for the duration of a block, restoring
 the previous state on exit. This is useful for code that needs to produce output even when the console is normally
 disabled:
@@ -226,14 +236,15 @@ from ataraxis_base_utilities import console
 
 # Console is disabled by default.
 with console.temporarily_enabled():
-    console.echo("This prints even if the console was disabled.")
+    console.echo(message="This prints even if the console was disabled.")
 # Console returns to its previous state here.
 ```
 
 #### Progress Bars
-The Console class provides two methods for displaying [tqdm](https://github.com/tqdm/tqdm)-based progress bars that
-respect the console's enabled state. Progress bar display is controlled independently of message output through the
-`show_progress` flag, which defaults to `False`.
+
+The Console class provides two methods for displaying [tqdm](https://github.com/tqdm/tqdm)-based progress bars. A bar
+is rendered only when the console is enabled ***and*** progress display is enabled through the `show_progress` flag,
+which defaults to `False`. The flag suppresses progress bars while leaving `echo()` output active.
 
 The `track()` method wraps an iterable with a progress bar:
 ```
@@ -241,7 +252,7 @@ from ataraxis_base_utilities import console
 console.enable()
 console.enable_progress()
 
-for item in console.track(range(100), description="Processing", unit="item"):
+for item in console.track(iterable=range(100), description="Processing", unit="item"):
     pass  # Process each item
 ```
 
@@ -252,9 +263,9 @@ from ataraxis_base_utilities import console
 console.enable()
 console.enable_progress()
 
-with console.progress(total=100, description="Downloading", unit="file") as pbar:
-    for i in range(100):
-        pbar.update(1)
+with console.progress(total=100, description="Downloading", unit="file") as progress_bar:
+    for index in range(100):
+        progress_bar.update(n=1)
 ```
 
 Progress bars can be enabled and disabled at any time using the `enable_progress()` and `disable_progress()` methods.
@@ -262,21 +273,23 @@ When progress is disabled, `track()` still yields all items and `progress()` sti
 is rendered.
 
 #### Compatibility with Other Projects
+
 The Console class is built on top of the [loguru](https://github.com/Delgan/loguru) library. As part of its
 initialization, each Console class automatically resets the handles used by the 'logger' exposed by Loguru. Therefore,
 the Console class is **incompatible** with any other third-party library that uses Loguru for similar purposes.
 
 ### Standalone Methods
-The standalone methods are a collection of utility functions that either abstract away the boilerplate code for 
-common data manipulations or provide novel functionality not commonly available through popular Python libraries used 
-by other Ataraxis framework projects. Generally, these methods are straightforward to use and do not require detailed
-explanation. See the API documentation below for details on available standalone methods.
+
+The standalone methods are a collection of utility functions that either abstract away the boilerplate code for
+common data manipulations or provide novel functionality not commonly available through popular Python libraries used
+by other Ataraxis framework projects. See the API documentation below for the signature and behavior of each
+standalone method.
 
 ___
 
 ## API Documentation
 
-See the [API documentation](https://ataraxis-base-utilities-api-docs.netlify.app/) for the detailed description of the 
+See the [API documentation](https://ataraxis-base-utilities-api-docs.netlify.app/) for the detailed description of the
 methods and classes exposed by components of this library.
 
 ___
@@ -354,7 +367,7 @@ ___
 ## Versioning
 
 This project uses [semantic versioning](https://semver.org/). See the
-[tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities/tags) for the available project 
+[tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities/tags) for the available project
 releases.
 
 ___

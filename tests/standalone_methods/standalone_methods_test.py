@@ -1,4 +1,4 @@
-"""Contains tests for functions provided by the standalone_methods package."""
+"""Contains tests for functions provided by the standalone_methods.py module."""
 
 from typing import Any
 from unittest.mock import patch
@@ -42,9 +42,9 @@ from ataraxis_base_utilities import (
 def test_ensure_list(input_item: Any, expected: list[Any]) -> None:
     """Verifies the functioning of the ensure_list() function for all supported input scenarios."""
     output = ensure_list(input_item=input_item)
-    # Checks output value
+    # Checks output value.
     assert output == expected
-    # Checks output type
+    # Checks output type.
     assert type(output) is type(expected)
 
 
@@ -68,13 +68,13 @@ def test_ensure_list_error() -> None:
 )
 def test_chunk_iterable(input_iterable: Any, chunk_size: int, expected_chunks: Any) -> None:
     """Verifies the functioning of the chunk_iterable() function for various input types and chunk sizes."""
-    # Returns a generator that can be iterated to get successive chunks
+    # Returns a generator that can be iterated to get successive chunks.
     result = list(chunk_iterable(iterable=input_iterable, chunk_size=chunk_size))
 
-    # Verifies that the obtained number of chunks matches expectation
+    # Verifies that the obtained number of chunks matches expectation.
     assert len(result) == len(expected_chunks)
 
-    # Verifies that the individual chunks match expected chunks
+    # Verifies that the individual chunks match expected chunks.
     for result_chunk, expected_chunk in zip(result, expected_chunks):
         if isinstance(result_chunk, np.ndarray):
             assert np.array_equal(result_chunk, expected_chunk)

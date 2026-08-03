@@ -1,4 +1,4 @@
-"""Provides standalone methods that abstract away common data manipulation tasks."""
+"""Provides standalone methods that abstract away common data manipulation and core-budget resolution tasks."""
 
 from .standalone_methods import (
     ensure_list,

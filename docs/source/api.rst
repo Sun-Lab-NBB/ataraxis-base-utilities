@@ -3,6 +3,7 @@
 
 Console
 =======
+
 .. automodule:: ataraxis_base_utilities.console
    :members:
    :undoc-members:
@@ -10,6 +11,7 @@ Console
 
 Standalone Methods
 ==================
+
 .. automodule:: ataraxis_base_utilities.standalone_methods
    :members:
    :undoc-members:

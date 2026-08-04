@@ -1,10 +1,8 @@
 """Contains tests for classes and functions provided by the console_class.py module."""
 
 import re
-from typing import Any
 from pathlib import Path
 import tempfile
-from collections.abc import Generator
 
 from loguru import logger
 import pytest
@@ -19,18 +17,9 @@ from ataraxis_base_utilities import (
 )
 
 
-@pytest.fixture
-def temp_dir() -> Generator[Path, Any, None]:
-    """Provides a temporary directory for tests that involve log file operations."""
-    temp_dir_name: str
-    with tempfile.TemporaryDirectory() as temp_dir_name:
-        yield Path(temp_dir_name)
-
-
 def test_console_class_initialization(tmp_path: Path) -> None:
     """Verifies the functioning of the Console class __init__() method."""
-
-    # Tests basic initialization
+    # Tests basic initialization.
     test_console = Console()
     assert test_console._line_width == 120
     assert not test_console._break_long_words
@@ -40,7 +29,7 @@ def test_console_class_initialization(tmp_path: Path) -> None:
     assert test_console.message_log_path is None
     assert test_console.error_log_path is None
 
-    # Tests initialization with the log directory
+    # Tests initialization with the log directory.
     log_dir = tmp_path / "logs"
     test_console_with_logs = Console(
         log_directory=log_dir,
@@ -72,23 +61,22 @@ def test_console_variable_initialization_defaults() -> None:
     assert console.error_log_path is None
 
 
-def test_console_initialization_errors(temp_dir: Path) -> None:
+def test_console_initialization_errors() -> None:
     """Verifies the error-handling behavior of the Console class __init__() method."""
-
-    # Tests invalid line width
+    # Tests invalid line width.
     with pytest.raises(ValueError, match="Invalid 'line_width' argument"):
         Console(line_width=0)
 
     with pytest.raises(ValueError, match="Invalid 'line_width' argument"):
         Console(line_width=-5)
 
-    # Tests invalid log_directory type
+    # Tests invalid log_directory type.
     with pytest.raises(TypeError, match="Invalid 'log_directory' argument"):
         Console(log_directory="not_a_path")
 
 
 def test_console_repr() -> None:
-    """Verifies the functionality of the Console class __repr__() method."""
+    """Verifies the functioning of the Console class __repr__() method."""
     test_console = Console(line_width=100)
     repr_string = repr(test_console)
 
@@ -96,17 +84,17 @@ def test_console_repr() -> None:
     assert "enabled=False" in repr_string
     assert "line_width=100" in repr_string
 
-    # Tests after enabling
+    # Tests after enabling.
     test_console.enable()
     enabled_repr = repr(test_console)
     assert "enabled=True" in enabled_repr
 
 
 def test_console_enable_disable() -> None:
-    """Verifies the functionality of Console class enable() / disable() methods and the enabled property."""
+    """Verifies the functioning of the Console class enable() / disable() methods and the enabled property."""
     test_console = Console()
 
-    # Initially disabled
+    # Verifies the initial disabled state.
     assert not test_console.enabled
 
     test_console.enable()
@@ -117,14 +105,14 @@ def test_console_enable_disable() -> None:
 
 
 def test_console_properties(tmp_path: Path) -> None:
-    """Verifies the functionality of Console class property getters."""
-    # Tests without the log directory
+    """Verifies the functioning of the Console class property getters."""
+    # Tests without the log directory.
     test_console = Console()
     assert test_console.debug_log_path is None
     assert test_console.message_log_path is None
     assert test_console.error_log_path is None
 
-    # Tests with the log directory
+    # Tests with the log directory.
     log_dir = tmp_path / "logs"
     test_console_with_logs = Console(log_directory=log_dir, log_format=LogFormats.JSON)
     assert test_console_with_logs.debug_log_path == log_dir / "debug.json"
@@ -133,67 +121,67 @@ def test_console_properties(tmp_path: Path) -> None:
 
 
 def test_ensure_directory_exists() -> None:
-    """Verifies the functionality of ensure_directory_exists() standalone function."""
+    """Verifies the functioning of the ensure_directory_exists() standalone function."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Tests with a directory path
+        # Tests with a directory path.
         dir_path = Path(temp_dir) / "test_dir"
         ensure_directory_exists(path=dir_path)
         assert dir_path.exists() and dir_path.is_dir()
 
-        # Tests with a file path
+        # Tests with a file path.
         file_path = Path(temp_dir) / "nested" / "dir" / "test_file.txt"
         ensure_directory_exists(path=file_path)
         assert file_path.parent.exists() and file_path.parent.is_dir()
-        assert not file_path.exists()  # The file itself should not be created
+        assert not file_path.exists()  # Verifies that the file itself is not created.
 
-        # Tests with an existing directory
+        # Tests with an existing directory.
         existing_dir = Path(temp_dir) / "existing_dir"
         existing_dir.mkdir()
         ensure_directory_exists(path=existing_dir)
         assert existing_dir.exists() and existing_dir.is_dir()
 
-        # Tests with a deeply nested path
+        # Tests with a deeply nested path.
         deep_path = Path(temp_dir) / "very" / "deep" / "nested" / "directory" / "structure"
         ensure_directory_exists(path=deep_path)
         assert deep_path.exists() and deep_path.is_dir()
 
 
 def test_console_format_message() -> None:
-    """Verifies the functionality of the Console class format_message() method."""
+    """Verifies the functioning of the Console class format_message() method."""
     test_console = Console(line_width=80)
     message = "This is a long message that should be wrapped properly according to the specified parameters"
 
-    # Tests non-loguru wrapping
+    # Tests non-loguru wrapping.
     formatted = test_console.format_message(message=message, loguru=False)
     assert len(max(formatted.split("\n"), key=len)) <= 80
 
-    # Tests loguru wrapping
+    # Tests loguru wrapping.
     formatted = test_console.format_message(message=message, loguru=True)
     lines = formatted.split("\n")
 
-    # Checks first line (should account for the 37-character loguru header)
+    # Checks the first line, which accounts for the 37-character loguru header.
     assert len(lines[0]) <= 43  # 80 - 37 = 43
 
-    # Checks further lines (should have proper indentation)
+    # Checks the remaining lines, which carry the alignment indent.
     for line in lines[1:]:
-        if line.strip():  # Skip empty lines
+        if line.strip():  # Skips empty lines.
             assert len(line) <= 80
             assert line.startswith(" " * 37)
 
-    # Ensures all words are preserved
+    # Ensures all words are preserved.
     formatted_words = re.findall(r"\w+", formatted)
     message_words = re.findall(r"\w+", message)
     assert formatted_words == message_words
 
 
 def test_console_echo(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Verifies the functionality of the Console class echo() method."""
-    # Setup console with log files
+    """Verifies the functioning of the Console class echo() method."""
+    # Sets up the console with log files.
     log_dir = tmp_path / "logs"
     test_console = Console(log_directory=log_dir, debug=True)
     test_console.enable()
 
-    # Tests each log level
+    # Tests each log level.
     log_levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.SUCCESS, LogLevel.WARNING, LogLevel.ERROR, LogLevel.CRITICAL]
 
     for level in log_levels:
@@ -202,28 +190,28 @@ def test_console_echo(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> Non
 
         captured = capsys.readouterr()
 
-        # Checks terminal output routing
+        # Checks terminal output routing.
         if level in [LogLevel.ERROR, LogLevel.CRITICAL]:
             assert message in captured.err
         else:
             assert message in captured.out
 
-    # Tests with the disabled console
+    # Tests with the disabled console.
     test_console.disable()
     test_console.echo(message="Disabled message", level=LogLevel.INFO)
     captured = capsys.readouterr()
 
-    # Should not output anything when disabled
+    # Verifies that a disabled console outputs nothing.
     assert "Disabled message" not in captured.out
     assert "Disabled message" not in captured.err
 
-    # Tests with a very long message
+    # Tests with a very long message.
     test_console.enable()
     long_message = "This is a very long message " * 20
     test_console.echo(message=long_message, level=LogLevel.INFO)
     captured = capsys.readouterr()
 
-    # Should be properly formatted and wrapped
+    # Verifies that the long message is formatted and wrapped.
     assert "This is a very long message" in captured.out
 
 
@@ -232,52 +220,52 @@ def test_console_echo_invalid_level() -> None:
     test_console = Console()
     test_console.enable()
 
-    # Tests with invalid log level
+    # Tests with invalid log level.
     with pytest.raises(ValueError, match="Unable to echo the requested message"):
         test_console.echo(message="Test message", level="INVALID_LEVEL")
 
 
 def test_console_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Verifies the functionality of the Console class error() method."""
-    # Setup console with error logging
+    """Verifies the functioning of the Console class error() method."""
+    # Sets up the console with error logging.
     log_dir = tmp_path / "logs"
     test_console = Console(log_directory=log_dir)
     test_console.enable()
 
-    # Tests basic error raising
+    # Tests basic error raising.
     with pytest.raises(RuntimeError, match="Test error"):
         test_console.error(message="Test error")
 
-    # Check that the error was logged to the terminal
+    # Checks that the error was logged to the terminal.
     captured = capsys.readouterr()
     assert "Test error" in captured.err
 
-    # Check that the error was logged to the file
+    # Checks that the error was logged to the file.
     error_log_path = log_dir / "error.log"
     if error_log_path.exists():
         log_content = error_log_path.read_text()
         assert "Test error" in log_content
 
-    # Tests a custom error type
+    # Tests a custom error type.
     with pytest.raises(ValueError, match="Custom error"):
         test_console.error(message="Custom error", error=ValueError)
 
-    # Tests with the disabled console (should still raise but not log)
+    # Tests with the disabled console, which raises the error without logging it.
     test_console.disable()
     with pytest.raises(TypeError, match="Disabled error"):
         test_console.error(message="Disabled error", error=TypeError)
 
     captured = capsys.readouterr()
-    # Should not log to terminal when disabled
+    # Verifies that a disabled console logs nothing to the terminal.
     assert "Disabled error" not in captured.err
 
 
 def test_console_error_without_logging() -> None:
     """Verifies that the Console class error() method works when no log directory is configured."""
-    test_console = Console()  # No log directory
+    test_console = Console()  # No log directory.
     test_console.enable()
 
-    # Should still raise error even without logging
+    # Verifies that the error is raised even without logging.
     with pytest.raises(RuntimeError, match="No logging error"):
         test_console.error(message="No logging error")
 
@@ -288,8 +276,8 @@ def test_log_formats() -> None:
     assert LogFormats.TXT == ".txt"
     assert LogFormats.JSON == ".json"
 
-    # Tests that it can be used in Console initialization. Note, cleanup error ignoring was added to comply with
-    # Windows not releasing file handles in time for the cleanup to work as expected.
+    # Tests that it can be used in Console initialization. Cleanup errors are ignored because Windows holds the log
+    # file handles past the point where the temporary directory is removed.
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
         log_dir = Path(temp_dir)
 
@@ -314,11 +302,11 @@ def test_console_add_handles(tmp_path: Path) -> None:
     log_dir = tmp_path / "logs"
     test_console = Console(log_directory=log_dir, debug=True)
 
-    # Should create loguru handles
+    # Verifies that loguru handles are created.
     initial_handler_count = len(logger._core.handlers)
     test_console._add_handles(debug=True, enqueue=False)
 
-    # Should have added handles (exact count depends on configuration)
+    # Verifies that handles were added. The exact count depends on the configuration.
     assert len(logger._core.handlers) >= initial_handler_count
 
 
@@ -326,15 +314,15 @@ def test_console_message_formatting_edge_cases() -> None:
     """Verifies edge case handling of the Console class format_message() method."""
     test_console = Console(line_width=50)
 
-    # Tests an empty message
+    # Tests an empty message.
     assert test_console.format_message(message="") == ""
 
-    # Tests a single word longer than line width
+    # Tests a single word longer than line width.
     long_word = "a" * 100
     formatted = test_console.format_message(message=long_word, loguru=False)
     assert long_word in formatted
 
-    # Tests the message with newlines
+    # Tests the message with newlines.
     multiline = "Line 1\nLine 2\nLine 3"
     formatted = test_console.format_message(message=multiline, loguru=False)
     assert "Line 1" in formatted and "Line 2" in formatted and "Line 3" in formatted
@@ -342,12 +330,12 @@ def test_console_message_formatting_edge_cases() -> None:
 
 def test_global_console_instance() -> None:
     """Verifies the functioning of the global console instance."""
-    # The global console should be properly initialized
+    # Verifies that the global console is properly initialized.
     assert isinstance(console, Console)
     assert console._line_width == 120
-    assert not console.enabled  # Should start disabled
+    assert not console.enabled  # Starts disabled.
 
-    # Should be able to enable/disable
+    # Verifies that the instance can be enabled and disabled.
     console.enable()
     assert console.enabled
     console.disable()
@@ -360,25 +348,25 @@ def test_console_track() -> None:
     test_console.enable()
     test_console.enable_progress()
 
-    # Verifies that track yields all items from the iterable
+    # Verifies that track yields all items from the iterable.
     items = list(test_console.track(iterable=range(5), description="Test"))
     assert items == [0, 1, 2, 3, 4]
 
-    # Verifies that track works with disabled console (items still yielded, no display)
+    # Verifies that track works with a disabled console, yielding items without displaying a bar.
     test_console.disable()
     items = list(test_console.track(iterable=range(3), description="Disabled"))
     assert items == [0, 1, 2]
 
-    # Verifies that track works with custom unit and total
+    # Verifies that track works with custom unit and total.
     test_console.enable()
     items = list(test_console.track(iterable=[10, 20, 30], description="Custom", total=3, unit="batch"))
     assert items == [10, 20, 30]
 
-    # Verifies that track works with an empty iterable
+    # Verifies that track works with an empty iterable.
     items = list(test_console.track(iterable=[], description="Empty"))
     assert items == []
 
-    # Verifies that track yields items when console is enabled but progress is disabled
+    # Verifies that track yields items when console is enabled but progress is disabled.
     test_console.disable_progress()
     items = list(test_console.track(iterable=range(4), description="No bars"))
     assert items == [0, 1, 2, 3]
@@ -390,32 +378,32 @@ def test_console_progress() -> None:
     test_console.enable()
     test_console.enable_progress()
 
-    # Verifies basic context manager behavior with manual updates
+    # Verifies basic context manager behavior with manual updates.
     with test_console.progress(total=10, description="Test", unit="step") as progress_bar:
         assert isinstance(progress_bar, ProgressBar)
         for _ in range(10):
-            progress_bar.update(1)
+            progress_bar.update(n=1)
 
-    # Verifies that progress works with disabled console
+    # Verifies that progress works with disabled console.
     test_console.disable()
     with test_console.progress(total=5, description="Disabled") as progress_bar:
-        progress_bar.update(5)
+        progress_bar.update(n=5)
 
-    # Verifies auto-close on exception (finally block ensures tqdm.close())
+    # Verifies auto-close on exception, which the finally block guarantees.
     test_console.enable()
     with pytest.raises(ValueError, match="Test exception"):
         with test_console.progress(total=10, description="Error") as progress_bar:
-            progress_bar.update(1)
+            progress_bar.update(n=1)
             raise ValueError("Test exception")
 
-    # Verifies that progress works with float total
+    # Verifies that progress works with float total.
     with test_console.progress(total=100.5, description="Float", unit="ml") as progress_bar:
-        progress_bar.update(50.25)
+        progress_bar.update(n=50.25)
 
-    # Verifies that progress accepts updates when console is enabled but progress is disabled
+    # Verifies that progress accepts updates when console is enabled but progress is disabled.
     test_console.disable_progress()
     with test_console.progress(total=5, description="No bars") as progress_bar:
-        progress_bar.update(5)
+        progress_bar.update(n=5)
 
 
 def test_progress_bar_repr() -> None:
@@ -430,7 +418,7 @@ def test_progress_bar_repr() -> None:
         assert "total=100" in repr_string
         assert "n=0" in repr_string
 
-        progress_bar.update(50)
+        progress_bar.update(n=50)
         repr_string = repr(progress_bar)
         assert "n=50" in repr_string
 
@@ -439,23 +427,23 @@ def test_console_temporarily_enabled() -> None:
     """Verifies the functioning of the Console class temporarily_enabled() context manager."""
     test_console = Console()
 
-    # Verifies that console is initially disabled
+    # Verifies that console is initially disabled.
     assert not test_console.enabled
 
-    # Verifies that temporarily_enabled enables the console within the context
+    # Verifies that temporarily_enabled enables the console within the context.
     with test_console.temporarily_enabled():
         assert test_console.enabled
 
-    # Verifies that the console is restored to disabled state after exit
+    # Verifies that the console is restored to disabled state after exit.
     assert not test_console.enabled
 
-    # Verifies that a previously enabled console stays enabled after exit
+    # Verifies that a previously enabled console stays enabled after exit.
     test_console.enable()
     with test_console.temporarily_enabled():
         assert test_console.enabled
     assert test_console.enabled
 
-    # Verifies state restoration on exception
+    # Verifies state restoration on exception.
     test_console.disable()
     with pytest.raises(RuntimeError, match="Test exception"):
         with test_console.temporarily_enabled():
@@ -466,38 +454,38 @@ def test_console_temporarily_enabled() -> None:
 
 def test_console_progress_toggle() -> None:
     """Verifies the functioning of the Console class enable_progress() and disable_progress() methods."""
-    # Verifies default state: progress disabled (aligned with console starting disabled)
+    # Verifies the default state, in which progress is disabled alongside the console.
     test_console = Console()
     assert not test_console.progress_enabled
 
-    # Verifies enable_progress activates bar display
+    # Verifies enable_progress activates bar display.
     test_console.enable()
     test_console.enable_progress()
     assert test_console.progress_enabled
     assert test_console.enabled
 
-    # Verifies disable_progress suppresses bars while echo still works
+    # Verifies disable_progress suppresses bars while echo still works.
     test_console.disable_progress()
     assert not test_console.progress_enabled
     assert test_console.enabled
 
-    # Verifies that track still yields items with progress disabled
+    # Verifies that track still yields items with progress disabled.
     items = list(test_console.track(iterable=range(3), description="Suppressed"))
     assert items == [0, 1, 2]
 
-    # Verifies that progress context manager still works with progress disabled
+    # Verifies that progress context manager still works with progress disabled.
     with test_console.progress(total=5, description="Suppressed") as progress_bar:
-        progress_bar.update(5)
+        progress_bar.update(n=5)
 
-    # Verifies enable_progress restores bar display
+    # Verifies enable_progress restores bar display.
     test_console.enable_progress()
     assert test_console.progress_enabled
 
-    # Verifies constructor kwarg overrides default state
+    # Verifies constructor kwarg overrides default state.
     test_console_with_progress = Console(show_progress=True)
     assert test_console_with_progress.progress_enabled
 
-    # Verifies that disabling both console and progress still yields items
+    # Verifies that disabling both console and progress still yields items.
     test_console.disable()
     test_console.disable_progress()
     items = list(test_console.track(iterable=range(2), description="Both off"))
@@ -509,7 +497,7 @@ def test_console_echo_raw(capsys: pytest.CaptureFixture[str]) -> None:
     test_console = Console(debug=True)
     test_console.enable()
 
-    # Verifies that raw mode outputs the message without loguru formatting for each level
+    # Verifies that raw mode outputs the message without loguru formatting for each level.
     raw_levels_stdout = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.SUCCESS, LogLevel.WARNING]
     for level in raw_levels_stdout:
         test_console.echo(message=f"Raw {level} line", level=level, raw=True)
@@ -517,7 +505,7 @@ def test_console_echo_raw(capsys: pytest.CaptureFixture[str]) -> None:
         assert f"Raw {level} line" in captured.out
         assert "|" not in captured.out
 
-    # Verifies that raw mode routes ERROR and CRITICAL levels to stderr
+    # Verifies that raw mode routes ERROR and CRITICAL levels to stderr.
     raw_levels_stderr = [LogLevel.ERROR, LogLevel.CRITICAL]
     for level in raw_levels_stderr:
         test_console.echo(message=f"Raw {level} line", level=level, raw=True)
@@ -525,11 +513,11 @@ def test_console_echo_raw(capsys: pytest.CaptureFixture[str]) -> None:
         assert f"Raw {level} line" in captured.err
         assert "|" not in captured.err
 
-    # Verifies that raw mode raises ValueError for invalid level
+    # Verifies that raw mode raises ValueError for invalid level.
     with pytest.raises(ValueError, match="Unable to echo the requested message"):
         test_console.echo(message="Bad level", level="INVALID_LEVEL", raw=True)
 
-    # Verifies that raw mode respects disabled console state
+    # Verifies that raw mode respects disabled console state.
     test_console.disable()
     test_console.echo(message="Should not appear", level=LogLevel.INFO, raw=True)
     captured = capsys.readouterr()
@@ -544,5 +532,5 @@ def test_progress_bar_close() -> None:
     test_console.enable_progress()
 
     with test_console.progress(total=10, description="Close test") as progress_bar:
-        progress_bar.update(5)
+        progress_bar.update(n=5)
         progress_bar.close()

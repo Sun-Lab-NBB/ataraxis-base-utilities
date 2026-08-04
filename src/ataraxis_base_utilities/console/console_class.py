@@ -23,7 +23,7 @@ _DEFAULT_LINE_WIDTH: int = 120
 
 
 class LogLevel(StrEnum):
-    """Defines the valid logging levels for Console.echo() method calls."""
+    """Defines the logging levels supported by the Console class."""
 
     DEBUG = "debug"
     """Logs diagnostic information for development and troubleshooting."""
@@ -51,25 +51,20 @@ class LogFormats(StrEnum):
 
 
 def ensure_directory_exists(path: Path) -> None:
-    """Determines if the directory portion of the input path exists and, if not, creates it.
+    """Creates the directory portion of the input path if it does not already exist.
 
     Args:
         path: The path to be processed. Can be a file or a directory path.
     """
-    # If the path is a file (because it has an .extension suffix), ensures the parent directory of the file, if any,
-    # exists.
+    # A path that carries an .extension suffix is treated as a file path, so the directory to create is its parent.
     if path.suffix:
         path.parent.mkdir(parents=True, exist_ok=True)
     else:
-        # If the path is a directory path, ensures the directory exists.
         path.mkdir(parents=True, exist_ok=True)
 
 
 class ProgressBar:
-    """Wraps a tqdm progress bar to provide a simplified update interface.
-
-    This class is yielded by the Console.progress() context manager and exposes only the update and close operations
-    needed for manual progress tracking.
+    """Wraps a tqdm progress bar to expose the update and close operations used for manual progress tracking.
 
     Args:
         tqdm_bar: The tqdm progress bar instance to wrap.
@@ -100,7 +95,7 @@ class ProgressBar:
 
 
 class Console:
-    """Provides methods for printing and / or logging messages and errors.
+    """Provides methods for printing and logging messages and errors.
 
     This class wraps and extends the functionality of the 'Loguru' library to provide a centralized message handling
     interface.
@@ -115,12 +110,12 @@ class Console:
         loguru handles to support its runtime.
 
     Args:
-        line_width: The maximum length, in characters, for a single line of displayed text. This is used to limit the
-            width of the text block as it is displayed in the terminal and written to log files.
-        log_directory: The path to the directory where to save the log files. Setting this argument to None disables
+        log_directory: The path to the directory where the log files are saved. Setting this argument to None disables
             the logging functionality.
-        log_format: The format to use for log files. This is only used when the 'log_directory' is provided. Supported
+        log_format: The format to use for log files. This is only used when ``log_directory`` is provided. Supported
             formats are LOG, TXT, and JSON.
+        line_width: The maximum length, in characters, for a single line of text printed to the terminal. Lines
+            written to log files carry loguru's wider default header, so they exceed this limit.
         break_long_words: Determines whether to break long words when formatting the text block to fit the width
             requirement.
         break_on_hyphens: Determines whether to break sentences on hyphens when formatting the text block to fit the
@@ -145,8 +140,8 @@ class Console:
             tqdm bars regardless of the console's enabled state.
 
     Raises:
-        ValueError: If the input line_width is not valid, or if the input log_format is not a valid LogFormats member.
-        TypeError: If the input log_directory is not a valid Path object.
+        ValueError: If ``line_width`` is not valid, or if ``log_format`` is not a valid LogFormats member.
+        TypeError: If ``log_directory`` is not a valid Path object.
     """
 
     def __init__(
@@ -179,7 +174,7 @@ class Console:
         self._break_long_words: bool = break_long_words
         self._break_on_hyphens: bool = break_on_hyphens
 
-        # Resolves the paths to output log files.
+        # A None log file path marks the corresponding file-writing handle as disabled.
         self._debug_log_path: Path | None = None
         self._message_log_path: Path | None = None
         self._error_log_path: Path | None = None
@@ -201,7 +196,7 @@ class Console:
                 )
 
             # If necessary, creates the log directory.
-            ensure_directory_exists(log_directory)
+            ensure_directory_exists(path=log_directory)
 
             # Ensures that the log format is one of the valid LogFormats members.
             log_format = LogFormats(log_format)
@@ -240,7 +235,7 @@ class Console:
         """Provides a context manager that temporarily enables the console.
 
         Saves the current enabled state, enables the console for the duration of the context, and restores the original
-        state on exit. This is useful for code that needs to produce output even when the console is normally disabled.
+        state on exit.
 
         Yields:
             None.
@@ -299,19 +294,17 @@ class Console:
     def format_message(self, message: str, *, loguru: bool = False) -> str:
         """Formats the input message string according to the instance configuration parameters.
 
-        This method is primarily intended to be used internally as part of the echo() or error() method runtimes.
-
         Args:
             message: The text string to format.
-            loguru: Determines if the message is intended to be subsequently processed via loguru backend or another
-                method or backend (e.g.: Exception class).
+            loguru: Determines whether the message is subsequently processed by the loguru backend. When False, the
+                message is formatted for another consumer, such as an Exception class.
 
         Returns:
             The formatted message string.
         """
-        # For loguru-processed messages, uses a custom formatting that accounts for the prepended header. The header
-        # is assumed to be matching the standard defined in _add_handles() method, which reserves
-        # _LOGURU_HEADER_WIDTH characters of the first line.
+        # For loguru-processed messages, uses a custom formatting that accounts for the prepended header. The header is
+        # assumed to match the standard defined in the _add_handles() method, which reserves _LOGURU_HEADER_WIDTH
+        # characters of the first line.
         if loguru:
             # Calculates indent and dedent parameters for the lines.
             first_line_width: int = self._line_width - _LOGURU_HEADER_WIDTH
@@ -328,12 +321,11 @@ class Console:
 
             lines.append(first_line)
 
-            # Wraps the rest of the message by statically calling textwrap.fill on it with precalculated indent to align
-            # the text to the first line.
+            # The precalculated indent aligns the wrapped remainder with the text that follows the loguru header.
             rest_of_message: str = message[len(first_line) :].strip()
             if rest_of_message:
                 subsequent_lines = textwrap.fill(
-                    rest_of_message,
+                    text=rest_of_message,
                     width=self._line_width,
                     initial_indent=subsequent_indent,
                     subsequent_indent=subsequent_indent,
@@ -442,7 +434,7 @@ class Console:
             An iterable that yields items from the input iterable while displaying a progress bar.
         """
         return tqdm(
-            iterable,
+            iterable=iterable,
             desc=description,
             total=total,
             unit=unit,
@@ -494,7 +486,7 @@ class Console:
             message: The error message.
             error: The exception class to raise.
         """
-        # Initializes the exception instance.
+        # The instance is built ahead of the log call to resolve the exception's class name for the log record.
         exception_instance = error(message)
 
         if self.enabled and self.error_log_path is not None:
@@ -503,7 +495,7 @@ class Console:
             log_message = f"Raising {type(exception_instance).__name__}: {formatted_message}"
             logger.error(log_message)
 
-        # Raises the error with clean formatting.
+        # The raised exception carries the message wrapped without the loguru header indentation.
         clean_message = self.format_message(message=message, loguru=False)
         raise error(clean_message)
 
@@ -515,13 +507,11 @@ class Console:
     ) -> None:
         """Configures the loguru logger instance to use requested handles after removing all existing handles.
 
-        This worker method is used internally as part of class instantiation to configure the loguru backend.
-
         Args:
             debug: Determines whether to enable debug handles.
             enqueue: Determines if messages are processed synchronously or asynchronously.
         """
-        # Removes existing handles.
+        # Every Console instance owns the full loguru handle set, so any handle configured earlier is discarded first.
         logger.remove()
 
         # Debug terminal-printing handle.

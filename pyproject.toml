@@ -43,9 +43,12 @@ classifiers = [
 
 # Runtime project dependencies.
 dependencies = [
+    # Message Handling
     "loguru>=0,<1",
-    "numpy>=2,<3",
     "tqdm>=4,<5",
+
+    # Data Processing
+    "numpy>=2,<3",
 ]
 
 # Project repository and hosted documentation URLs.
@@ -99,11 +102,11 @@ lint.ignore = [
     "PLR0911", # Sometimes complex return graphs are necessary
     "PLR0912", # Sometimes complex functions are necessary
     "PLR0913", # Sometimes complex functions are necessary
-    "PLR0915", # Sometimes complex type definitions are necessary
+    "PLR0915", # Sometimes functions with many statements are necessary
     "PLR0917", # Call sites pass keyword arguments, so the positional count is immaterial
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
-    "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
+    "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "D107",    # __init__ is documented inside the main class docstring where applicable
     "D205",    # Bugs out for file descriptions
@@ -116,7 +119,7 @@ lint.ignore = [
 [tool.ruff.format]
 quote-style = "double"             # Uses double quotes for strings
 indent-style = "space"             # Uses space for indents
-skip-magic-trailing-comma = false  # Like black, ignores trailing commas
+skip-magic-trailing-comma = false  # Like black, honors the magic trailing comma
 line-ending = "auto"               # Automatically detects and standardizes line-ending character
 
 # Docstrings and comments' line length
@@ -155,11 +158,12 @@ convention = "google"
     "UP003",   # type(...) calls mirror the type-name interpolation performed by the tested function
 ]
 
+# Import sorting and grouping configurations
 [tool.ruff.lint.isort]
 case-sensitive = true              # Takes case into account when sorting imports
 combine-as-imports = true          # Combines multiple "as" imports for the same package
 force-wrap-aliases = true          # Wraps "as" imports so that each uses a separate line
-force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close together
+force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close
 length-sort = true                 # Places shorter imports first
 
 # MyPy configuration section.
@@ -186,10 +190,10 @@ extra_checks = true
 pretty = true
 
 exclude = [
-    "ataraxis-base-utilities-\\d+", # Ignores temporary folder created by setuptools when building the sdist
+    "ataraxis-base-utilities-\\d+", # Ignores the temporary folder created while building the sdist
     "venv.*/",                      # Ignores virtual environments
-    "build/",                       # Ignores the sdist directory
-    "dist/",                        # Ignores the wheel directory
+    "build/",                       # Ignores the temporary build scratch directory
+    "dist/",                        # Ignores the built distribution (sdist and wheel) directory
     "docs/",                        # Ignores the sphinx / doxygen directory
     "stubs/",                       # Ignores stubs directory (stubgen output target)
     "recipe/",                      # Ignores recipe directory (grayskull output target)

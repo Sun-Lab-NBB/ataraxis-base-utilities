@@ -2,7 +2,7 @@
 
 ## Session start behavior
 
-At the beginning of each coding session, before making any code changes, you should build a comprehensive understanding
+At the beginning of each coding session, before making any code changes, you MUST build a comprehensive understanding
 of the codebase by invoking the `/explore-codebase` skill.
 
 ## Style guide compliance
@@ -20,8 +20,7 @@ You MUST invoke the appropriate style skill before performing ANY of the followi
 | Writing or modifying API docs           | `/api-docs`        |
 | Creating or modifying project structure | `/project-layout`  |
 
-Each skill contains a verification checklist that you MUST complete before submitting any work. Failure to invoke the
-appropriate skill results in style violations.
+Each skill contains a verification checklist that you MUST complete before submitting any work.
 
 ## Cross-referenced library verification
 
@@ -51,22 +50,22 @@ you MUST:**
 
 ## Available skills
 
-| Skill                   | Description                                                                          |
-|-------------------------|--------------------------------------------------------------------------------------|
-| `/explore-codebase`     | Perform in-depth codebase exploration at session start                               |
-| `/explore-dependencies` | Build a live API snapshot of installed Ataraxis dependencies                         |
-| `/python-style`         | Apply Ataraxis framework Python coding conventions (REQUIRED for all Python changes) |
-| `/readme-style`         | Apply Ataraxis framework README conventions (REQUIRED for README changes)            |
-| `/pyproject-style`      | Apply Ataraxis framework pyproject.toml conventions                                  |
-| `/tox-config`           | Apply Ataraxis framework tox.ini conventions                                         |
-| `/api-docs`             | Apply Ataraxis framework API documentation conventions                               |
-| `/project-layout`       | Apply Ataraxis framework project directory structure conventions                     |
-| `/skill-design`         | Generate and verify skill files and CLAUDE.md project instructions                   |
-| `/audit-facts`          | Audit documentation files for factual accuracy against the source code               |
-| `/audit-style`          | Audit source, config, and documentation files for style-guide compliance             |
-| `/commit`               | Draft Ataraxis framework style-compliant git commit messages                         |
-| `/pr`                   | Draft Ataraxis framework style-compliant pull request summaries                      |
-| `/release`              | Draft Ataraxis framework style-compliant release notes                               |
+| Skill                   | Description                                                                            |
+|-------------------------|----------------------------------------------------------------------------------------|
+| `/explore-codebase`     | Performs in-depth codebase exploration at session start                                |
+| `/explore-dependencies` | Builds a live API snapshot of installed Ataraxis dependencies                          |
+| `/python-style`         | Applies Ataraxis framework Python coding conventions (REQUIRED for all Python changes) |
+| `/readme-style`         | Applies Ataraxis framework README conventions (REQUIRED for README changes)            |
+| `/pyproject-style`      | Applies Ataraxis framework pyproject.toml conventions                                  |
+| `/tox-config`           | Applies Ataraxis framework tox.ini conventions                                         |
+| `/api-docs`             | Applies Ataraxis framework API documentation conventions                               |
+| `/project-layout`       | Applies Ataraxis framework project directory structure conventions                     |
+| `/skill-design`         | Generates and verifies skill files and CLAUDE.md project instructions                  |
+| `/audit-facts`          | Audits documentation files for factual accuracy against the source code                |
+| `/audit-style`          | Audits source, config, and documentation files for style-guide compliance              |
+| `/commit`               | Drafts Ataraxis framework style-compliant git commit messages                          |
+| `/pr`                   | Drafts Ataraxis framework style-compliant pull request summaries                       |
+| `/release`              | Drafts Ataraxis framework style-compliant release notes                                |
 
 ## Downstream library integration
 
@@ -93,14 +92,14 @@ management, and common utility functions for all Ataraxis framework projects at 
 ### Architecture
 
 - **Console module**: The core `Console` class wraps loguru to provide a unified message and error handling framework.
-  The global `console` instance is pre-configured and shared across all Ataraxis framework projects. Includes
-  `ProgressBar` for tqdm-based progress tracking, `LogLevel` and `LogFormats` enumerations, and a
-  `temporarily_enabled()` context manager.
+  The global `console` instance is pre-configured and shared across all Ataraxis framework projects. Includes the
+  `track()` and `progress()` progress-bar entry points, `ProgressBar` for tqdm-based progress tracking, `LogLevel` and
+  `LogFormats` enumerations, and a `temporarily_enabled()` context manager.
 - **Standalone methods**: Utility functions for list conversion (`ensure_list`), iterable chunking
   (`chunk_iterable`), error formatting (`error_format`), CPU core resolution (`resolve_worker_count`,
   `resolve_parallel_job_capacity`), and NumPy byte serialization (`convert_scalar_to_bytes`,
   `convert_bytes_to_scalar`, `convert_array_to_bytes`, `convert_bytes_to_array`).
-- **No CLI**: This is a library-only project with no command-line entry points.
+- **Library-only distribution**: The package exposes all of its functionality through the importable Python API.
 - **Singleton pattern**: The global `console` instance allows consistent configuration from application entry points.
 
 ### Core components
@@ -108,6 +107,7 @@ management, and common utility functions for all Ataraxis framework projects at 
 | Component                       | File                                       | Purpose                                      |
 |---------------------------------|--------------------------------------------|----------------------------------------------|
 | `Console`                       | `console/console_class.py`                 | Unified terminal printing and file logging   |
+| `console`                       | `console/console_class.py`                 | Pre-configured global Console instance       |
 | `LogLevel`                      | `console/console_class.py`                 | Enum for log levels (DEBUG through CRITICAL) |
 | `LogFormats`                    | `console/console_class.py`                 | Enum for log file formats (LOG, TXT, JSON)   |
 | `ProgressBar`                   | `console/console_class.py`                 | Wrapper for tqdm progress bars               |
@@ -135,18 +135,21 @@ management, and common utility functions for all Ataraxis framework projects at 
 
 1. Review `src/ataraxis_base_utilities/console/console_class.py` for current implementation
 2. Understand the loguru integration and three-tier logging (debug, message, error)
-3. Maintain backwards compatibility — this library is used by all other Ataraxis framework projects
-4. Test changes thoroughly as they affect the entire ecosystem
+3. Maintain backwards compatibility, since this library is used by all other Ataraxis framework projects
+4. Run `tox -e lint` and `tox -e py312-test` before submitting, as changes reach the entire ecosystem
 
 **Adding utility functions:**
 
 1. Review existing functions in `src/ataraxis_base_utilities/standalone_methods/standalone_methods.py`
 2. Follow the same patterns for type hints, docstrings, and error handling
-3. Export new functions in `src/ataraxis_base_utilities/__init__.py`
-4. Add corresponding tests in `tests/standalone_methods/`
+3. Export new functions from `src/ataraxis_base_utilities/standalone_methods/__init__.py`, adding them to both the
+   imports and `__all__`
+4. Re-export them from the top-level `src/ataraxis_base_utilities/__init__.py` through the sub-package namespace
+5. Add corresponding tests in `tests/standalone_methods/`
 
 **Important considerations:**
 
 - This library intentionally conflicts with other loguru-using libraries
 - The global `console` instance must be enabled from application entry points
-- Use `console.error()` instead of `raise` for all error handling within this library
+- Use `console.error()` instead of `raise` for all error handling within this library. The console module itself is
+  the exception, since it raises directly to report its own initialization errors

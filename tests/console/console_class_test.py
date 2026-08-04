@@ -70,6 +70,20 @@ def test_console_initialization_errors() -> None:
     with pytest.raises(ValueError, match="Invalid 'line_width' argument"):
         Console(line_width=-5)
 
+    # Widths at or below the loguru header width are rejected, since the header alone consumes the whole line and the
+    # remaining budget turns into a negative slice that produces lines wider than the caller asked for.
+    with pytest.raises(ValueError, match="Invalid 'line_width' argument"):
+        Console(line_width=37)
+
+    with pytest.raises(ValueError, match="Invalid 'line_width' argument"):
+        Console(line_width=20)
+
+    # The first width above the header is accepted and formats within its own limit.
+    narrow_console = Console(line_width=38)
+    assert narrow_console._line_width == 38
+    formatted = narrow_console.format_message(message="a b " * 40, loguru=True)
+    assert all(len(line) <= 38 for line in formatted.splitlines())
+
     # Tests invalid log_directory type.
     with pytest.raises(TypeError, match="Invalid 'log_directory' argument"):
         Console(log_directory="not_a_path")
@@ -146,6 +160,27 @@ def test_ensure_directory_exists() -> None:
         assert deep_path.exists() and deep_path.is_dir()
 
 
+def test_ensure_directory_exists_is_file_keyword() -> None:
+    """Verifies that the is_file argument overrides the extension-suffix heuristic in both directions."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # A directory whose own name carries a dot is created once the caller states that it is not a file.
+        dotted_directory = Path(temp_dir) / "session.2026"
+        ensure_directory_exists(path=dotted_directory, is_file=False)
+        assert dotted_directory.exists() and dotted_directory.is_dir()
+
+        # Left to the heuristic, the same name reads as a file, so the parent is created in its place.
+        heuristic_directory = Path(temp_dir) / "nested" / "session.2027"
+        ensure_directory_exists(path=heuristic_directory)
+        assert not heuristic_directory.exists()
+        assert heuristic_directory.parent.exists() and heuristic_directory.parent.is_dir()
+
+        # A file carrying no extension is handled once the caller states that it is a file.
+        extensionless_file = Path(temp_dir) / "container" / "README"
+        ensure_directory_exists(path=extensionless_file, is_file=True)
+        assert extensionless_file.parent.exists() and extensionless_file.parent.is_dir()
+        assert not extensionless_file.exists()
+
+
 def test_console_format_message() -> None:
     """Verifies the functioning of the Console class format_message() method."""
     test_console = Console(line_width=80)
@@ -214,6 +249,20 @@ def test_console_echo(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> Non
     # Verifies that the long message is formatted and wrapped.
     assert "This is a very long message" in captured.out
 
+    # Verifies that each file-writing handle received the levels its own filter selects. The terminal assertions
+    # above pass even when every file-writing handle is absent, so these pin the file half of the routing.
+    debug_content = (log_dir / "debug.log").read_text()
+    message_content = (log_dir / "message.log").read_text()
+    error_content = (log_dir / "error.log").read_text()
+
+    assert f"Test {LogLevel.DEBUG} message" in debug_content
+    for level in [LogLevel.INFO, LogLevel.SUCCESS, LogLevel.WARNING]:
+        assert f"Test {level} message" in message_content
+        assert f"Test {level} message" not in error_content
+    for level in [LogLevel.ERROR, LogLevel.CRITICAL]:
+        assert f"Test {level} message" in error_content
+        assert f"Test {level} message" not in message_content
+
 
 def test_console_echo_invalid_level() -> None:
     """Verifies the error-handling behavior of the Console class echo() method."""
@@ -240,11 +289,11 @@ def test_console_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> No
     captured = capsys.readouterr()
     assert "Test error" in captured.err
 
-    # Checks that the error was logged to the file.
+    # Checks that the error was logged to the file. The assertion is unconditional, so a missing file-writing handle
+    # fails the test rather than silently skipping it.
     error_log_path = log_dir / "error.log"
-    if error_log_path.exists():
-        log_content = error_log_path.read_text()
-        assert "Test error" in log_content
+    assert error_log_path.exists()
+    assert "Test error" in error_log_path.read_text()
 
     # Tests a custom error type.
     with pytest.raises(ValueError, match="Custom error"):
@@ -464,10 +513,25 @@ def test_console_progress_toggle() -> None:
     assert test_console.progress_enabled
     assert test_console.enabled
 
+    # Verifies that the tqdm bar is genuinely rendered. The progress_enabled property alone stays correct even when
+    # the flag never reaches tqdm, so the flag itself is asserted here.
+    with test_console.progress(total=1, description="Shown") as progress_bar:
+        assert not progress_bar._tqdm_bar.disable
+    shown_bar = test_console.track(iterable=range(1), description="Shown")
+    assert not shown_bar.disable
+    shown_bar.close()
+
     # Verifies disable_progress suppresses bars while echo still works.
     test_console.disable_progress()
     assert not test_console.progress_enabled
     assert test_console.enabled
+
+    # Verifies that the tqdm bar is genuinely suppressed rather than merely flagged as such.
+    with test_console.progress(total=1, description="Suppressed") as progress_bar:
+        assert progress_bar._tqdm_bar.disable
+    suppressed_bar = test_console.track(iterable=range(1), description="Suppressed")
+    assert suppressed_bar.disable
+    suppressed_bar.close()
 
     # Verifies that track still yields items with progress disabled.
     items = list(test_console.track(iterable=range(3), description="Suppressed"))
@@ -485,8 +549,15 @@ def test_console_progress_toggle() -> None:
     test_console_with_progress = Console(show_progress=True)
     assert test_console_with_progress.progress_enabled
 
-    # Verifies that disabling both console and progress still yields items.
+    # Verifies that a disabled console suppresses bars even while progress display stays enabled, which pins the
+    # second term of the conjunction that decides the tqdm flag.
     test_console.disable()
+    test_console.enable_progress()
+    console_off_bar = test_console.track(iterable=range(1), description="Console off")
+    assert console_off_bar.disable
+    console_off_bar.close()
+
+    # Verifies that disabling both console and progress still yields items.
     test_console.disable_progress()
     items = list(test_console.track(iterable=range(2), description="Both off"))
     assert items == [0, 1]

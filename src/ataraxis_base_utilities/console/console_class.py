@@ -186,7 +186,6 @@ class Console:
         self._message_log_path: Path | None = None
         self._error_log_path: Path | None = None
 
-        # If log directory is provided, constructs the paths to the log files using the directory path.
         if log_directory is not None:
             if not isinstance(log_directory, Path):
                 message = (
@@ -202,18 +201,15 @@ class Console:
                     )
                 )
 
-            # If necessary, creates the log directory.
             ensure_directory_exists(path=log_directory)
 
             # Ensures that the log format is one of the valid LogFormats members.
             log_format = LogFormats(log_format)
 
-            # Constructs and saves the paths to log files to class attributes.
             self._debug_log_path = log_directory / f"debug{log_format}"
             self._message_log_path = log_directory / f"message{log_format}"
             self._error_log_path = log_directory / f"error{log_format}"
 
-        # Adds handles to configure loguru backend.
         self._add_handles(debug=debug, enqueue=enqueue)
 
         # Ensures the Console is disabled until it is manually enabled by the user.
@@ -343,7 +339,6 @@ class Console:
 
             return "\n".join(lines)
 
-        # For non-loguru-processed messages, simply wraps the message via textwrap.
         return textwrap.fill(
             text=message,
             width=self._line_width,
@@ -367,11 +362,9 @@ class Console:
         Raises:
             ValueError: If the requested level is not one of the valid LogLevel members.
         """
-        # If the Console is disabled, returns without further processing.
         if not self.enabled:
             return
 
-        # Handles raw mode, which bypasses message formatting and loguru headers.
         if raw:
             opt_logger = logger.opt(raw=True)
             raw_message = message + "\n"
@@ -396,10 +389,8 @@ class Console:
                 self.error(message=message, error=ValueError)
             return
 
-        # Formats the message to work with additional loguru-prepended header.
         formatted_message = self.format_message(message=message, loguru=True)
 
-        # Determines the appropriate level and logs the message.
         if level == LogLevel.DEBUG:
             logger.debug(formatted_message)
         elif level == LogLevel.INFO:

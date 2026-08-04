@@ -50,9 +50,8 @@ ___
 
 ## Dependencies
 
-For users, all library dependencies are installed automatically by all supported installation
-methods. For developers, see the [Developers](#developers) section for information on installing
-additional development dependencies.
+For users, all library dependencies are installed automatically by all supported installation methods. For developers,
+see the [Developers](#developers) section for information on installing additional development dependencies.
 
 ___
 
@@ -71,8 +70,8 @@ ___
 
 ### pip
 
-Use the following command to install the library and all of its dependencies via
-[pip](https://pip.pypa.io/en/stable/): `pip install ataraxis-base-utilities`
+Use the following command to install the library and all of its dependencies via [pip](https://pip.pypa.io/en/stable/):
+`pip install ataraxis-base-utilities`
 
 ___
 
@@ -296,14 +295,14 @@ ___
 
 ## Developers
 
-This section provides installation, dependency, and build-system instructions for the developers
-that want to modify the source code of this library.
+This section provides installation, dependency, and build-system instructions for the developers that want to modify
+the source code of this library.
 
 ### Installing the Project
 
 ***Note,*** this installation method requires **mamba version 2.3.2 or above**. Currently, all Ataraxis framework
-automation pipelines require that mamba is installed through the
-[miniforge3](https://github.com/conda-forge/miniforge) installer.
+automation pipelines require that mamba is installed through the [miniforge3](https://github.com/conda-forge/miniforge)
+installer.
 
 1. Download this repository to the local machine using the preferred method, such as git-cloning.
 2. If the downloaded distribution is stored as a compressed archive, unpack it using the appropriate decompression tool.

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from os import cpu_count
 import re
+import math
 from typing import TYPE_CHECKING, Any
 from functools import lru_cache
 from collections.abc import Iterable, Generator
@@ -131,8 +132,7 @@ def resolve_worker_count(
     A positive ``requested_workers`` is honored exactly, capped only by the logical core count, so an explicit
     request can claim every core on the machine. A non-positive ``requested_workers`` auto-resolves to every available
     core minus ``reserved_cores``, clamped to at least 1, leaving headroom for the host system. If the core count
-    cannot be auto-detected, the budget falls back to 1. The reserved cores apply only when the worker count
-    auto-resolves.
+    cannot be auto-detected, the budget falls back to 1.
 
     Args:
         requested_workers: The number of workers to allocate. A positive value is honored up to the logical core
@@ -220,26 +220,31 @@ def convert_scalar_to_bytes(
         A 1D numpy array of dtype uint8 containing the serialized bytes.
 
     Raises:
-        ValueError: If ``value`` carries a fractional part that the target integer ``dtype`` is unable to represent.
+        ValueError: If ``value`` carries a fractional part that the target integer ``dtype`` is unable to represent,
+            or if ``value`` falls outside the range the target ``dtype`` is able to represent.
     """
-    # Converts numpy scalar types to Python scalars for cache key hashability.
-    if isinstance(value, np.generic):
-        value = value.item()
+    # Converts numpy scalar types to Python scalars for cache key hashability. The result is bound to its own annotated
+    # name, since reassigning the argument would leave the numpy type in the union every later statement sees.
+    scalar_value: int | float | bool = value.item() if isinstance(value, np.generic) else value
 
     # A cast from a fractional float to an integer dtype discards the fraction without raising, so the mismatch is
     # rejected here. Integral floats round trip exactly and are accepted, and booleans are integers in Python and so
     # never reach this branch.
-    if isinstance(value, float) and not value.is_integer() and dtype.kind in "iu":
+    if isinstance(scalar_value, float) and not scalar_value.is_integer() and dtype.kind in "iu":
         message = (
             f"Invalid 'value' argument encountered when converting scalar to bytes. Expected a value the target "
-            f"dtype is able to represent, but encountered {value}, whose fractional part the cast to {dtype} would "
-            f"discard."
+            f"dtype is able to represent, but encountered {scalar_value}, whose fractional part the cast to {dtype} "
+            f"would discard."
         )
         console.error(message=message, error=ValueError)
 
+    # An out-of-range value is rejected before the cast, which would otherwise leak an unformatted numpy OverflowError
+    # for integer dtypes and silently produce infinity for float dtypes.
+    _validate_scalar_range(value=scalar_value, dtype=dtype)
+
     # An lru_cache resolves keys by equality, and -0.0, 0.0, 0, and False all compare equal while -0.0 alone carries
     # the sign bit. Passing repr(value) alongside the value gives each of them its own entry.
-    raw = _cached_convert_scalar_to_bytes(value=value, value_key=repr(value), dtype_str=dtype.str)
+    raw = _cached_convert_scalar_to_bytes(value=scalar_value, value_key=repr(scalar_value), dtype_str=dtype.str)
     return np.frombuffer(raw, dtype=np.uint8).copy()
 
 
@@ -298,8 +303,16 @@ def convert_array_to_bytes(array: NDArray[Any]) -> NDArray[np.uint8]:
         A 1D numpy array of dtype uint8 containing the serialized bytes.
 
     Raises:
+        TypeError: If ``array`` is not a numpy array.
         ValueError: If ``array`` is not 1D or is empty.
     """
+    if not isinstance(array, np.ndarray):
+        message = (
+            f"Invalid 'array' type encountered when converting array to bytes. Expected a numpy array, but "
+            f"encountered {type(array).__name__}."
+        )
+        console.error(message=message, error=TypeError)
+
     if array.ndim != 1:
         message = (
             f"Invalid 'array' shape encountered when converting array to bytes. Expected a 1D array, but encountered "
@@ -375,6 +388,52 @@ def _generate_chunks(
     for start_index in range(0, len(iterable), chunk_size):
         chunk_slice = iterable[start_index : start_index + chunk_size]
         yield np.array(chunk_slice) if chunks_are_arrays else tuple(chunk_slice)
+
+
+def _validate_scalar_range(
+    value: int | float | bool,  # noqa: PYI041, FBT001
+    dtype: np.dtype[Any],
+) -> None:
+    """Verifies that the input scalar value falls inside the range the target dtype is able to represent.
+
+    Notes:
+        Integer dtypes reject every value outside the bounds numpy reports for them. Float dtypes reject every finite
+        value whose magnitude exceeds the largest representable float, which the cast would otherwise round to infinity
+        while raising nothing. Infinity and NaN are representable at every float width, so they are accepted, and dtypes
+        of every other kind carry no range to enforce.
+
+    Args:
+        value: The scalar value to validate.
+        dtype: The numpy dtype specifying the target type and byte order.
+
+    Raises:
+        ValueError: If ``value`` falls outside the range the target ``dtype`` is able to represent.
+    """
+    if dtype.kind in "iu":
+        integer_bounds = np.iinfo(dtype)
+        if not integer_bounds.min <= value <= integer_bounds.max:
+            message = (
+                f"Invalid 'value' argument encountered when converting scalar to bytes. Expected a value between "
+                f"{integer_bounds.min} and {integer_bounds.max} for dtype {dtype}, but encountered {value}."
+            )
+            console.error(message=message, error=ValueError)
+        return
+
+    # A non-finite float is representable at every width, and math.isfinite() raises for an integer too large to cast
+    # to a float, so the check is confined to values that are already floats.
+    if dtype.kind != "f" or (isinstance(value, float) and not math.isfinite(value)):
+        return
+
+    # The bounds are unwrapped to Python floats so that comparing them against an arbitrarily large Python integer
+    # stays exact rather than overflowing the cast.
+    maximum_magnitude = float(np.finfo(dtype).max)
+    if not -maximum_magnitude <= value <= maximum_magnitude:
+        message = (
+            f"Invalid 'value' argument encountered when converting scalar to bytes. Expected a value between "
+            f"{-maximum_magnitude} and {maximum_magnitude} for dtype {dtype}, but encountered {value}, which the cast "
+            f"to {dtype} would round to infinity."
+        )
+        console.error(message=message, error=ValueError)
 
 
 @lru_cache(maxsize=4096)

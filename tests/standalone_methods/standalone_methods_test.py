@@ -290,6 +290,64 @@ def test_convert_scalar_to_bytes_fractional_float_error() -> None:
     assert convert_bytes_to_scalar(data=fractional_bytes, dtype=np.dtype("<f8")) == pytest.approx(3.14)
 
 
+@pytest.mark.parametrize(
+    "value, dtype",
+    [
+        # Every integer width rejects the first value above its maximum and the first value below its minimum.
+        (256, np.dtype("uint8")),
+        (-1, np.dtype("uint8")),
+        (128, np.dtype("int8")),
+        (-129, np.dtype("int8")),
+        (2**31, np.dtype("<i4")),
+        (-(2**31) - 1, np.dtype("<i4")),
+        (2**64, np.dtype("<u8")),
+        (2**63, np.dtype("<i8")),
+        # An integral float clears the fractional guard, so the range guard is what rejects it.
+        (300.0, np.dtype("uint8")),
+        (-1.0, np.dtype("uint8")),
+        # A finite float above the float width rounds to infinity during the cast, which is silent data loss.
+        (1e300, np.dtype("<f4")),
+        (-1e300, np.dtype("<f4")),
+        (65600.0, np.dtype("<f2")),
+        # An integer too large to cast to a float reaches the float branch without overflowing the comparison.
+        (10**400, np.dtype("<f8")),
+    ],
+)
+def test_convert_scalar_to_bytes_range_error(value: Any, dtype: np.dtype[Any]) -> None:
+    """Verifies convert_scalar_to_bytes() rejects values the target dtype is unable to represent."""
+    with pytest.raises(ValueError, match="Invalid 'value' argument"):
+        convert_scalar_to_bytes(value=value, dtype=dtype)
+
+
+@pytest.mark.parametrize(
+    "value, dtype",
+    [
+        # The exact bounds of each integer width stay accepted, so the guard rejects nothing that fits.
+        (255, np.dtype("uint8")),
+        (0, np.dtype("uint8")),
+        (127, np.dtype("int8")),
+        (-128, np.dtype("int8")),
+        (2**63 - 1, np.dtype("<i8")),
+        (2**64 - 1, np.dtype("<u8")),
+        # The largest finite float of each width casts without rounding to infinity.
+        (float(np.finfo(np.float32).max), np.dtype("<f4")),
+        (float(-np.finfo(np.float32).max), np.dtype("<f4")),
+        # Infinity and NaN are representable at every float width, so the guard lets them through.
+        (float("inf"), np.dtype("<f8")),
+        (float("-inf"), np.dtype("<f4")),
+        (float("nan"), np.dtype("<f8")),
+        # A bool dtype coerces every value it is given, so it carries no range to enforce.
+        (2, np.dtype("bool")),
+        (-1, np.dtype("bool")),
+    ],
+)
+def test_convert_scalar_to_bytes_range_boundaries(value: Any, dtype: np.dtype[Any]) -> None:
+    """Verifies convert_scalar_to_bytes() accepts every value the target dtype is able to represent."""
+    result = convert_scalar_to_bytes(value=value, dtype=dtype)
+    assert result.dtype == np.uint8
+    assert result.nbytes == dtype.itemsize
+
+
 def test_conversion_functions_accept_non_contiguous_arrays() -> None:
     """Verifies that the byte conversion functions compact strided inputs rather than rejecting them."""
     # A step slice produces a 1D array that satisfies every declared precondition while being non-contiguous.
@@ -382,6 +440,12 @@ def test_convert_array_to_bytes_error() -> None:
     empty = np.array([], dtype=np.int32)
     with pytest.raises(ValueError, match="Invalid 'array' size"):
         convert_array_to_bytes(array=empty)
+
+    # Non-array inputs are rejected with the same formatted error the sibling conversion functions raise, rather than
+    # reaching the attribute access on the following line.
+    for non_array in ([1, 2, 3], (1, 2, 3), 5, "abc", None):
+        with pytest.raises(TypeError, match="Invalid 'array' type"):
+            convert_array_to_bytes(array=non_array)
 
 
 @pytest.mark.parametrize(

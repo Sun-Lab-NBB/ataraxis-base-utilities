@@ -51,7 +51,7 @@ dependencies:
     - accessible-pygments==0.0.5
     - alabaster==1.0.0
     - ast_serialize==0.6.0
-    - ataraxis-automation==9.0.1
+    - ataraxis-automation==9.0.2
     - babel==2.18.0
     - bashlex==0.18
     - beautifulsoup4==4.15.0

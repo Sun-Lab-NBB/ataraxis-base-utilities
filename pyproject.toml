@@ -19,10 +19,8 @@ maintainers = [
     { name = "Ivan Kondratyev", email = "ik278@cornell.edu" },
 ]
 
-# The list of keywords that describe the project
-keywords = ["utilities", "utility-classes", "console", "ataraxis", "logging"]
+keywords =["utilities", "utility-classes", "console", "ataraxis", "logging"]
 
-# Additional classifiers used by PyPI to group repositories.
 classifiers = [
     # Development status
     "Development Status :: 5 - Production/Stable",
@@ -41,7 +39,6 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-# Runtime project dependencies.
 dependencies = [
     # Message Handling
     "loguru>=0,<1",
@@ -81,10 +78,10 @@ packages = ["src/ataraxis_base_utilities"]
 
 # Ruff Configuration.
 [tool.ruff]
-line-length = 120         # Deviates from the commonly used '80' standard.
+line-length = 120
 indent-width = 4
 target-version = "py312"  # Targets the lowest supported version of python
-src = ["src"]             # The name of the root source code directory
+src = ["src"]
 
 # Excludes 'service' .py files, such as the sphinx configuration file, from linting.
 extend-exclude = ["conf.py"]
@@ -92,7 +89,6 @@ extend-exclude = ["conf.py"]
 # Checks for all potential violations and uses the exclusions below to target-disable specific ones.
 lint.select = ["ALL"]
 
-# General ignore directives
 lint.ignore = [
     # Universal lint.ignore corpus. Present in every Ataraxis framework and Sollertia platform project.
     "W291",    # Conflicts with docstring formatting
@@ -155,7 +151,7 @@ convention = "google"
     "EM101",   # Messages raised to trigger the tested behavior are clearer inline than as named variables
     "TRY003",  # Messages raised to trigger the tested behavior are defined at the raise site by design
     "PT014",   # A parenthesized scalar case documents an input form that evaluates to a duplicate
-    "B905",    # The zipped sequences are asserted to have equal length on the preceding line
+    "B905",    # The zipped sequences are asserted to have equal length before the loop runs
     "UP003",   # type(...) calls mirror the type-name interpolation performed by the tested function
 ]
 
@@ -184,10 +180,8 @@ warn_return_any = true
 no_implicit_reexport = true
 strict_equality = true
 
-# Extra checks (equivalent to --extra-checks)
 extra_checks = true
 
-# Pretty output (equivalent to --pretty)
 pretty = true
 
 exclude = [
@@ -196,8 +190,8 @@ exclude = [
     "build/",
     "dist/",
     "docs/",
-    "stubs/",             # stubgen output target
-    "recipe/",            # grayskull output target
+    "stubs/",                        # stubgen output target
+    "recipe/",                       # grayskull output target
     "tests/",
 ]
 
@@ -206,7 +200,7 @@ exclude = [
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
 
-# This is used by the 'test' tox tasks to aggregate coverage data produced during pytest runtimes.
+# Used by the 'coverage' tox task to merge the coverage data files the '{py}-test' tasks produce.
 [tool.coverage.paths]
 
 # Maps coverage measured in site-packages to source files in src. The second pattern matches the POSIX virtual

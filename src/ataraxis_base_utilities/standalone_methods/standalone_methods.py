@@ -132,8 +132,7 @@ def resolve_worker_count(
     A positive ``requested_workers`` is honored exactly, capped only by the logical core count, so an explicit
     request can claim every core on the machine. A non-positive ``requested_workers`` auto-resolves to every available
     core minus ``reserved_cores``, clamped to at least 1, leaving headroom for the host system. If the core count
-    cannot be auto-detected, the budget falls back to 1. The reserved cores apply only when the worker count
-    auto-resolves.
+    cannot be auto-detected, the budget falls back to 1.
 
     Args:
         requested_workers: The number of workers to allocate. A positive value is honored up to the logical core

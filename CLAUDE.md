@@ -63,6 +63,9 @@ you MUST:**
 | `/skill-design`         | Generates and verifies skill files and CLAUDE.md project instructions                  |
 | `/audit-facts`          | Audits documentation files for factual accuracy against the source code                |
 | `/audit-style`          | Audits source, config, and documentation files for style-guide compliance              |
+| `/audit-correctness`    | Audits source code for bugs, edge cases, races, and leaks                              |
+| `/audit-performance`    | Audits source code for speed, memory use, and dtype predictability                     |
+| `/audit-project`        | Orchestrates the four audits and merges their findings into one report                 |
 | `/commit`               | Drafts Ataraxis framework style-compliant git commit messages                          |
 | `/pr`                   | Drafts Ataraxis framework style-compliant pull request summaries                       |
 | `/release`              | Drafts Ataraxis framework style-compliant release notes                                |

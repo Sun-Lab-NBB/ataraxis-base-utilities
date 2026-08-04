@@ -45,13 +45,12 @@ def ensure_list(
     # Numpy arrays are processed based on their dimensionality. This has to do with the fact that zero-dimensional
     # numpy arrays are interpreted as scalars by some numpy methods and as arrays by others.
     if isinstance(input_item, np.ndarray):
-        if input_item.size > 1 and input_item.ndim >= 1:
-            output_list: list[Any] = input_item.tolist()
-            return output_list
-        if input_item.size == 1:
-            # A single-element array is unwrapped via item() so that the list holds a Python scalar rather than a
-            # numpy one.
+        if input_item.ndim <= 1 and input_item.size == 1:
+            # A single-element flat array is unwrapped via item() so that the list holds a Python scalar rather than
+            # a numpy one. The dimensionality bound keeps the unwrap away from arrays whose nesting must survive.
             return [input_item.item()]
+        output_list: list[Any] = input_item.tolist()
+        return output_list
     if isinstance(input_item, list):
         return input_item
     if isinstance(input_item, Iterable):
@@ -102,11 +101,9 @@ def chunk_iterable(
         )
         console.error(message=message, error=ValueError)
 
-    # Chunking is performed along the first dimension for both NumPy arrays and Python iterable sequences.
-    # This preserves array dimensionality within chunks for NumPy arrays.
-    for start_index in range(0, len(iterable), chunk_size):
-        chunk_slice = iterable[start_index : start_index + chunk_size]
-        yield np.array(chunk_slice) if isinstance(iterable, np.ndarray) else tuple(chunk_slice)
+    # The chunking loop lives in a separate generator so that the validation above runs when this function is called
+    # rather than when the returned generator is first advanced.
+    return _generate_chunks(iterable=iterable, chunk_size=chunk_size)
 
 
 def error_format(message: str) -> str:
@@ -209,9 +206,11 @@ def convert_scalar_to_bytes(
     int32/uint32/float32, 8 for int64/uint64/float64, etc.
 
     Notes:
-        Uses an internal LRU cache keyed on the ``(value, dtype_str)`` tuple. The cached raw bytes are converted to a
-        new numpy array on each call, avoiding mutation issues. This benefits tight loops where the same value+dtype
-        pair is serialized repeatedly.
+        Uses an internal LRU cache keyed on the ``(value, repr(value), dtype_str)`` tuple. The repr component
+        separates entries that compare equal while serializing to different bytes, which covers 0.0 against -0.0 and
+        every int, float, and bool that shares a numeric value. The cached raw bytes are converted to a new numpy
+        array on each call, avoiding mutation issues. This benefits tight loops where the same value+dtype pair is
+        serialized repeatedly.
 
     Args:
         value: The scalar value to serialize.
@@ -219,12 +218,28 @@ def convert_scalar_to_bytes(
 
     Returns:
         A 1D numpy array of dtype uint8 containing the serialized bytes.
+
+    Raises:
+        ValueError: If ``value`` carries a fractional part that the target integer ``dtype`` is unable to represent.
     """
     # Converts numpy scalar types to Python scalars for cache key hashability.
     if isinstance(value, np.generic):
         value = value.item()
 
-    raw = _cached_convert_scalar_to_bytes(value=value, dtype_str=dtype.str)
+    # A cast from a fractional float to an integer dtype discards the fraction without raising, so the mismatch is
+    # rejected here. Integral floats round trip exactly and are accepted, and booleans are integers in Python and so
+    # never reach this branch.
+    if isinstance(value, float) and not value.is_integer() and dtype.kind in "iu":
+        message = (
+            f"Invalid 'value' argument encountered when converting scalar to bytes. Expected a value the target "
+            f"dtype is able to represent, but encountered {value}, whose fractional part the cast to {dtype} would "
+            f"discard."
+        )
+        console.error(message=message, error=ValueError)
+
+    # An lru_cache resolves keys by equality, and -0.0, 0.0, 0, and False all compare equal while -0.0 alone carries
+    # the sign bit. Passing repr(value) alongside the value gives each of them its own entry.
+    raw = _cached_convert_scalar_to_bytes(value=value, value_key=repr(value), dtype_str=dtype.str)
     return np.frombuffer(raw, dtype=np.uint8).copy()
 
 
@@ -266,7 +281,8 @@ def convert_bytes_to_scalar(
         )
         console.error(message=message, error=ValueError)
 
-    result: int | float | bool = dtype.type(np.frombuffer(data, dtype=dtype)[0]).item()
+    # np.frombuffer rejects a strided array, so a non-contiguous input is compacted before it is reinterpreted.
+    result: int | float | bool = dtype.type(np.frombuffer(np.ascontiguousarray(data), dtype=dtype)[0]).item()
     return result
 
 
@@ -295,7 +311,8 @@ def convert_array_to_bytes(array: NDArray[Any]) -> NDArray[np.uint8]:
         message = "Invalid 'array' size encountered when converting array to bytes. Expected a non-empty array."
         console.error(message=message, error=ValueError)
 
-    return np.frombuffer(array, dtype=np.uint8).copy()
+    # np.frombuffer rejects a strided array, so a non-contiguous input is compacted before it is reinterpreted.
+    return np.frombuffer(np.ascontiguousarray(array), dtype=np.uint8).copy()
 
 
 def convert_bytes_to_array(
@@ -312,8 +329,16 @@ def convert_bytes_to_array(
         A 1D numpy array of the specified dtype containing the deserialized values.
 
     Raises:
+        TypeError: If ``data`` is not a uint8 numpy array.
         ValueError: If ``data`` is not 1D or its byte count is not evenly divisible by the target dtype's itemsize.
     """
+    if not isinstance(data, np.ndarray) or data.dtype != np.uint8:
+        message = (
+            f"Invalid 'data' type encountered when converting bytes to array. Expected a uint8 numpy array, but "
+            f"encountered {type(data).__name__} with dtype {getattr(data, 'dtype', 'N/A')}."
+        )
+        console.error(message=message, error=TypeError)
+
     if data.ndim != 1:
         message = (
             f"Invalid 'data' shape encountered when converting bytes to array. Expected a 1D array, but encountered "
@@ -328,15 +353,43 @@ def convert_bytes_to_array(
         )
         console.error(message=message, error=ValueError)
 
-    return np.frombuffer(data, dtype=dtype).copy()
+    # np.frombuffer rejects a strided array, so a non-contiguous input is compacted before it is reinterpreted.
+    return np.frombuffer(np.ascontiguousarray(data), dtype=dtype).copy()
+
+
+def _generate_chunks(
+    iterable: NDArray[Any] | tuple[Any, ...] | list[Any], chunk_size: int
+) -> Generator[tuple[Any, ...] | NDArray[Any], None, None]:
+    """Yields successive chunks from an iterable that chunk_iterable() has already validated.
+
+    Args:
+        iterable: The Python iterable or NumPy array to split into chunks.
+        chunk_size: The maximum number of elements in each chunk.
+
+    Yields:
+        Chunks of the input iterable (as a tuple) or NumPy array, containing at most ``chunk_size`` elements.
+    """
+    # Chunking is performed along the first dimension for both NumPy arrays and Python iterable sequences.
+    # This preserves array dimensionality within chunks for NumPy arrays.
+    chunks_are_arrays = isinstance(iterable, np.ndarray)
+    for start_index in range(0, len(iterable), chunk_size):
+        chunk_slice = iterable[start_index : start_index + chunk_size]
+        yield np.array(chunk_slice) if chunks_are_arrays else tuple(chunk_slice)
 
 
 @lru_cache(maxsize=4096)
-def _cached_convert_scalar_to_bytes(value: int | float | bool, dtype_str: str) -> bytes:  # noqa: PYI041, FBT001
+def _cached_convert_scalar_to_bytes(
+    value: int | float | bool,  # noqa: PYI041, FBT001
+    value_key: str,  # noqa: ARG001
+    dtype_str: str,
+) -> bytes:
     """Serializes a scalar value to raw bytes using an LRU cache.
 
     Args:
         value: The scalar value to serialize.
+        value_key: The repr() of the value, which separates cache entries whose values compare equal while
+            serializing to different bytes. The body never reads it, since its only role is to widen the key the
+            lru_cache decorator builds from the argument list.
         dtype_str: The numpy dtype string specifying the target type and byte order.
 
     Returns:

@@ -50,14 +50,19 @@ class LogFormats(StrEnum):
     """JSON structured file format."""
 
 
-def ensure_directory_exists(path: Path) -> None:
+def ensure_directory_exists(path: Path, *, is_file: bool | None = None) -> None:
     """Creates the directory portion of the input path if it does not already exist.
 
     Args:
         path: The path to be processed. Can be a file or a directory path.
+        is_file: Determines whether ``path`` points to a file, in which case the directory created is its parent.
+            When None, the suffix of the final path component decides, so a directory whose own name carries a dot
+            needs this argument set to False to be created rather than skipped.
     """
-    # A path that carries an .extension suffix is treated as a file path, so the directory to create is its parent.
-    if path.suffix:
+    # Absent an explicit statement of intent, a path that carries an .extension suffix is treated as a file path, so
+    # the directory to create is its parent.
+    path_points_to_file = bool(path.suffix) if is_file is None else is_file
+    if path_points_to_file:
         path.parent.mkdir(parents=True, exist_ok=True)
     else:
         path.mkdir(parents=True, exist_ok=True)
@@ -114,8 +119,9 @@ class Console:
             the logging functionality.
         log_format: The format to use for log files. This is only used when ``log_directory`` is provided. Supported
             formats are LOG, TXT, and JSON.
-        line_width: The maximum length, in characters, for a single line of text printed to the terminal. Lines
-            written to log files carry loguru's wider default header, so they exceed this limit.
+        line_width: The maximum length, in characters, for a single line of text printed to the terminal. Must exceed
+            the 37 characters the loguru header reserves on the first line of each message. Lines written to log files
+            carry loguru's wider default header, so they exceed this limit.
         break_long_words: Determines whether to break long words when formatting the text block to fit the width
             requirement.
         break_on_hyphens: Determines whether to break sentences on hyphens when formatting the text block to fit the
@@ -157,10 +163,11 @@ class Console:
         show_progress: bool = False,
     ) -> None:
         # Message formatting parameters.
-        if line_width <= 0:
+        if line_width <= _LOGURU_HEADER_WIDTH:
             message = (
                 f"Invalid 'line_width' argument encountered when instantiating Console class instance. "
-                f"Expected a value greater than 0, but encountered {line_width}."
+                f"Expected a value greater than {_LOGURU_HEADER_WIDTH}, which is the width the loguru header "
+                f"reserves on the first line of each message, but encountered {line_width}."
             )
             raise ValueError(
                 textwrap.fill(

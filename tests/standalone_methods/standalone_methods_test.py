@@ -31,6 +31,15 @@ from ataraxis_base_utilities import (
         (np.array([1, 2, 3]), [1, 2, 3]),
         (np.array([[1, 2, 3], [4, 5, 6]]), [[1, 2, 3], [4, 5, 6]]),
         (np.array([1]), [1]),
+        # Single-element arrays keep every dimension above the first, so only a flat one collapses to a bare scalar.
+        (np.array([[7]]), [[7]]),
+        (np.array([[[9]]]), [[[9]]]),
+        (np.array([[1, 2]]), [[1, 2]]),
+        # A zero-dimensional array is a scalar to some numpy methods and an array to others, so it is pinned here.
+        (np.array(5), [5]),
+        # Empty arrays convert to an empty list at every dimensionality.
+        (np.array([]), []),
+        (np.empty((0, 3)), []),
         (1, [1]),
         (1.0, [1.0]),
         ("a", ["a"]),
@@ -64,6 +73,18 @@ def test_ensure_list_error() -> None:
         ([1, 2, 3, 4, 5], 2, [(1, 2), (3, 4), (5,)]),
         (np.array([1, 2, 3, 4, 5]), 2, [np.array([1, 2]), np.array([3, 4]), np.array([5])]),
         ((1, 2, 3, 4, 5), 3, [(1, 2, 3), (4, 5)]),
+        # A narrow dtype pins the documented data type preservation, which a value-only comparison cannot see.
+        (
+            np.array([1, 2, 3], dtype=np.uint8),
+            2,
+            [np.array([1, 2], dtype=np.uint8), np.array([3], dtype=np.uint8)],
+        ),
+        # A two-dimensional input pins the documented dimensionality preservation.
+        (
+            np.arange(6, dtype=np.int16).reshape(3, 2),
+            2,
+            [np.array([[0, 1], [2, 3]], dtype=np.int16), np.array([[4, 5]], dtype=np.int16)],
+        ),
     ],
 )
 def test_chunk_iterable(input_iterable: Any, chunk_size: int, expected_chunks: Any) -> None:
@@ -78,6 +99,8 @@ def test_chunk_iterable(input_iterable: Any, chunk_size: int, expected_chunks: A
     for result_chunk, expected_chunk in zip(result, expected_chunks):
         if isinstance(result_chunk, np.ndarray):
             assert np.array_equal(result_chunk, expected_chunk)
+            assert result_chunk.dtype == expected_chunk.dtype
+            assert result_chunk.ndim == expected_chunk.ndim
         else:
             assert result_chunk == expected_chunk
 
@@ -97,6 +120,15 @@ def test_chunk_iterable_error() -> None:
     )
     with pytest.raises(ValueError, match=error_format(message=message)):
         list(chunk_iterable(iterable=[1, 2, 3], chunk_size=-4))
+
+
+def test_chunk_iterable_validates_at_call_time() -> None:
+    """Verifies that chunk_iterable() raises on invalid arguments before the returned generator is advanced."""
+    with pytest.raises(TypeError, match="Unsupported 'iterable' type"):
+        chunk_iterable(iterable=1, chunk_size=2)
+
+    with pytest.raises(ValueError, match="Unsupported 'chunk_size' value"):
+        chunk_iterable(iterable=[1, 2, 3], chunk_size=0)
 
 
 @pytest.mark.parametrize(
@@ -210,6 +242,69 @@ def test_convert_scalar_to_bytes_cache() -> None:
     assert np.array_equal(second_result, post_mutation_result)
 
 
+def test_convert_scalar_to_bytes_signed_zero() -> None:
+    """Verifies that values comparing equal to zero each serialize to their own byte pattern."""
+    # Negative zero is serialized first, which is the order that lets a shared cache entry poison the rest.
+    negative_zero = convert_scalar_to_bytes(value=-0.0, dtype=np.dtype("<f8"))
+    positive_zero = convert_scalar_to_bytes(value=0.0, dtype=np.dtype("<f8"))
+    integer_zero = convert_scalar_to_bytes(value=0, dtype=np.dtype("<f8"))
+    boolean_zero = convert_scalar_to_bytes(value=False, dtype=np.dtype("<f8"))
+
+    # Only negative zero carries the sign bit in the most significant byte.
+    assert negative_zero.tolist() == [0, 0, 0, 0, 0, 0, 0, 128]
+    assert positive_zero.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
+    assert integer_zero.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
+    assert boolean_zero.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
+
+    # The sign survives the round trip, which np.signbit resolves where an equality comparison cannot.
+    assert np.signbit(convert_bytes_to_scalar(data=negative_zero, dtype=np.dtype("<f8")))
+    assert not np.signbit(convert_bytes_to_scalar(data=positive_zero, dtype=np.dtype("<f8")))
+
+    # The same separation holds at float32 width.
+    assert convert_scalar_to_bytes(value=-0.0, dtype=np.dtype("<f4")).tolist() == [0, 0, 0, 128]
+    assert convert_scalar_to_bytes(value=0.0, dtype=np.dtype("<f4")).tolist() == [0, 0, 0, 0]
+
+
+def test_convert_scalar_to_bytes_fractional_float_error() -> None:
+    """Verifies that convert_scalar_to_bytes() rejects a fractional float bound for an integer dtype."""
+    # The default dtype is a signed 64-bit integer, so an omitted dtype reaches the guard too.
+    with pytest.raises(ValueError, match="Invalid 'value' argument"):
+        convert_scalar_to_bytes(value=3.14)
+
+    with pytest.raises(ValueError, match="Invalid 'value' argument"):
+        convert_scalar_to_bytes(value=-2.5, dtype=np.dtype("<u8"))
+
+    # A numpy float is unwrapped to a Python float before the guard, so it is rejected on the same terms.
+    with pytest.raises(ValueError, match="Invalid 'value' argument"):
+        convert_scalar_to_bytes(value=np.float64(0.5), dtype=np.dtype("<i4"))
+
+    # An integral float round trips exactly through an integer dtype, so it stays accepted.
+    assert convert_bytes_to_scalar(data=convert_scalar_to_bytes(value=5.0)) == 5
+
+    # Booleans are integers in Python, so they stay accepted against an integer dtype.
+    boolean_bytes = convert_scalar_to_bytes(value=True, dtype=np.dtype("<u8"))
+    assert convert_bytes_to_scalar(data=boolean_bytes, dtype=np.dtype("<u8")) == 1
+
+    # A float dtype represents the fraction, so the same value passes against it.
+    fractional_bytes = convert_scalar_to_bytes(value=3.14, dtype=np.dtype("<f8"))
+    assert convert_bytes_to_scalar(data=fractional_bytes, dtype=np.dtype("<f8")) == pytest.approx(3.14)
+
+
+def test_conversion_functions_accept_non_contiguous_arrays() -> None:
+    """Verifies that the byte conversion functions compact strided inputs rather than rejecting them."""
+    # A step slice produces a 1D array that satisfies every declared precondition while being non-contiguous.
+    strided_bytes = np.arange(16, dtype=np.uint8)[::2]
+    assert not strided_bytes.flags["C_CONTIGUOUS"]
+    expected_scalar = np.frombuffer(strided_bytes.tobytes(), dtype=np.dtype("<i8"))[0].item()
+    assert convert_bytes_to_scalar(data=strided_bytes, dtype=np.dtype("<i8")) == expected_scalar
+
+    strided_array = np.arange(10, dtype=np.int64)[::2]
+    assert not strided_array.flags["C_CONTIGUOUS"]
+    serialized = convert_array_to_bytes(array=strided_array)
+    assert serialized.nbytes == strided_array.nbytes
+    assert np.array_equal(convert_bytes_to_array(data=serialized, dtype=np.dtype("<i8")), strided_array)
+
+
 @pytest.mark.parametrize(
     "value, dtype",
     [
@@ -317,3 +412,9 @@ def test_convert_bytes_to_array_error() -> None:
     wrong_ndim = np.array([[1, 2], [3, 4]], dtype=np.uint8)
     with pytest.raises(ValueError, match="Invalid 'data' shape"):
         convert_bytes_to_array(data=wrong_ndim, dtype=np.dtype("<i4"))
+
+    # Wrong dtype: a non-uint8 array whose byte count still divides evenly, which would otherwise be reinterpreted
+    # into silently wrong values instead of being rejected.
+    wrong_dtype = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64)
+    with pytest.raises(TypeError, match="Invalid 'data' type"):
+        convert_bytes_to_array(data=wrong_dtype, dtype=np.dtype("<i8"))

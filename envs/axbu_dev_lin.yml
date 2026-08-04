@@ -5,7 +5,7 @@ dependencies:
   - _openmp_mutex=4.5=20_gnu
   - bzip2=1.0.8=hda65f42_9
   - ca-certificates=2026.7.22=hbd8a1cb_0
-  - cachetools=7.1.6=pyhd8ed1ab_0
+  - cachetools=7.1.7=pyhd8ed1ab_0
   - colorama=0.4.6=pyhd8ed1ab_1
   - distlib=0.4.3=pyhcf101f3_0
   - filelock=3.32.2=pyhd8ed1ab_0
@@ -51,7 +51,7 @@ dependencies:
     - accessible-pygments==0.0.5
     - alabaster==1.0.0
     - ast_serialize==0.6.0
-    - ataraxis-automation==9.0.0
+    - ataraxis-automation==9.0.1
     - babel==2.18.0
     - bashlex==0.18
     - beautifulsoup4==4.15.0
@@ -59,7 +59,7 @@ dependencies:
     - breathe==4.36.0
     - build==1.5.0
     - certifi==2026.7.22
-    - cffi==2.1.0
+    - cffi==2.1.1
     - charset-normalizer==3.4.9
     - cibuildwheel==4.1.1
     - click==8.4.2
@@ -107,7 +107,7 @@ dependencies:
     - smmap==5.0.2
     - snowballstemmer==3.1.1
     - soupsieve==2.9.1
-    - sphinx-autodoc-typehints==3.13.0
+    - sphinx-autodoc-typehints==3.13.2
     - sphinx-basic-ng==1.0.0b2
     - sphinx-click==6.2.0
     - sphinxcontrib-applehelp==2.0.0
